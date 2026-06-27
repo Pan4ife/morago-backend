@@ -1,14 +1,10 @@
 package org.morago.dto.auth;
 
-public class RefreshRequest {
+import jakarta.validation.constraints.NotBlank;
 
-    private String refreshToken;
+public record RefreshRequest (
 
-    public String getRefreshToken() {
-        return refreshToken;
-    }
+    @NotBlank
+    String refreshToken
 
-    public void setRefreshToken(String refreshToken) {
-        this.refreshToken = refreshToken;
-    }
-}
+) {}

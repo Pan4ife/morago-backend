@@ -35,15 +35,15 @@ public class AuthService {
 
     public void register(RegisterRequest request) {
 
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmail(request.email())) {
             throw new BadCredentialsException("Invalid email or password");
         }
 
         User user = new User();
 
-        user.setEmail(request.getEmail());
+        user.setEmail(request.email());
 
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPassword(passwordEncoder.encode(request.password()));
 
         Role userRole = roleRepository.findByName(RoleName.USER)
                         .orElseThrow(
@@ -92,7 +92,7 @@ public class AuthService {
 
     public JwtResponse refresh(RefreshRequest request) {
 
-        RefreshToken refreshTokenEntity = refreshTokenRepository.findByToken(request.getRefreshToken())
+        RefreshToken refreshTokenEntity = refreshTokenRepository.findByToken(request.refreshToken())
                 .orElseThrow(() -> new RuntimeException("Refresh token not found"));
 
         String tokenType = jwtService.extractTokenType(refreshTokenEntity.getToken());
