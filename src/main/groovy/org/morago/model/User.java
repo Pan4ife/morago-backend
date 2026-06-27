@@ -34,6 +34,9 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
+    @OneToOne(mappedBy = "user")
+    private TranslatorProfile translatorProfile;
+
     public Long getId() {
         return id;
     }

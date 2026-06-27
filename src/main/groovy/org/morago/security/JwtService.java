@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
 import org.morago.model.User;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -15,10 +16,11 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    private static final String SECRET = "5f2c3d8a1e7b9f6a4c8d2e5f7a1b3c9d5e6f8a2b4c7d9e1f3a5b7c9d2e4f6a8";
+    @Value("${jwt.secret}")
+    private String secret;
 
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8)
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8)
         );
     }
 
@@ -26,6 +28,7 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(user.getEmail())
+                .claim("type", "access")
                 .issuedAt(new Date())
                 .expiration(
                         new Date(System.currentTimeMillis() + 1000 * 60 * 15)
@@ -38,6 +41,7 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(user.getEmail())
+                .claim("type", "refresh")
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 30))
                 .signWith(getSigningKey())
@@ -59,5 +63,15 @@ public class JwtService {
         String username = extractUsername(token);
 
         return username.equals(user.getEmail());
+    }
+
+    public String extractTokenType(String token) {
+
+        return Jwts.parser()
+                .verifyWith((SecretKey) getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get("type", String.class);
     }
 }

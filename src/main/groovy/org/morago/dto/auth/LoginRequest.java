@@ -1,9 +1,15 @@
 package org.morago.dto.auth;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+
 public class LoginRequest {
 
+    @Email(message = "Wrong email format")
+    @NotBlank(message = "Email cannot be empty")
     private String email;
 
+    @NotBlank(message = "Password cannot be empty")
     private String password;
 
     public String getEmail() {

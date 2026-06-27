@@ -1,5 +1,6 @@
 package org.morago.security;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,7 +38,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = authHeader.substring(7);
 
-        String username = jwtService.extractUsername(token);
+        String username;
+
+        try {
+
+            username = jwtService.extractUsername(token);
+
+        } catch (JwtException e) {
+
+            filterChain.doFilter(request, response);
+
+            return;
+        }
+
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 

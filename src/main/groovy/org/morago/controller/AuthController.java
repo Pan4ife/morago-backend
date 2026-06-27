@@ -1,6 +1,7 @@
 package org.morago.controller;
 
-import io.jsonwebtoken.Jwt;
+
+import jakarta.validation.Valid;
 import org.morago.dto.auth.JwtResponse;
 import org.morago.dto.auth.LoginRequest;
 import org.morago.dto.auth.RefreshRequest;
@@ -22,7 +23,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<String> register(
-            @RequestBody RegisterRequest request
+            @Valid @RequestBody RegisterRequest request
             ) {
 
         authService.register(request);
@@ -32,7 +33,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<JwtResponse> login(
-            @RequestBody LoginRequest request
+            @Valid @RequestBody LoginRequest request
     ) {
 
         return ResponseEntity.ok(authService.login(request));
@@ -50,5 +51,13 @@ public class AuthController {
 
 
         return ResponseEntity.ok(authentication.getName());
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(Authentication authentication) {
+
+        authService.logout(authentication.getName());
+
+        return ResponseEntity.ok("Logged out");
     }
 }
