@@ -37,7 +37,7 @@ public class AuthService {
     public void register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("User already exists");
+            throw new BadCredentialsException("Invalid email or password");
         }
 
         User user = new User();
