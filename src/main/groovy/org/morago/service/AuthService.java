@@ -57,11 +57,11 @@ public class AuthService {
 
     public JwtResponse login(LoginRequest request) {
 
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!passwordEncoder.matches(
-                request.getPassword(),
+                request.password(),
                 user.getPassword()
         )) {
 
