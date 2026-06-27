@@ -1,4 +1,4 @@
-package org.morago.security;
+package org.morago.service;
 
 
 import io.jsonwebtoken.Jwts;

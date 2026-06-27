@@ -13,7 +13,6 @@ import org.morago.model.User;
 import org.morago.repository.RefreshTokenRepository;
 import org.morago.repository.RoleRepository;
 import org.morago.repository.UserRepository;
-import org.morago.security.JwtService;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
