@@ -1,7 +1,6 @@
 package org.morago.service;
 
 import lombok.RequiredArgsConstructor;
-import org.morago.dto.language.LanguageResponse;
 import org.morago.dto.translatorprofile.TranslatorProfileRequest;
 import org.morago.dto.translatorprofile.TranslatorProfileResponse;
 import org.morago.model.Language;

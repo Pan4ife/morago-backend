@@ -37,6 +37,14 @@ public class User {
     @OneToOne(mappedBy = "user")
     private TranslatorProfile translatorProfile;
 
+    public User(){}
+
+    public User(String email, String password, Set<Role> roles) {
+        this.email = email;
+        this.password = password;
+        this.roles = roles;
+    }
+
     public Long getId() {
         return id;
     }
