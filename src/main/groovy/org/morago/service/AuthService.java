@@ -1,5 +1,6 @@
 package org.morago.service;
 
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.auth.JwtResponse;
 import org.morago.dto.auth.LoginRequest;
@@ -55,6 +56,7 @@ public class AuthService {
         userRepository.save(user);
     }
 
+    @Transactional
     public JwtResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.email())
@@ -90,6 +92,7 @@ public class AuthService {
 
     }
 
+    @Transactional
     public JwtResponse refresh(RefreshRequest request) {
 
         RefreshToken refreshTokenEntity = refreshTokenRepository.findByToken(request.refreshToken())
@@ -129,6 +132,7 @@ public class AuthService {
         return new JwtResponse(accessToken, refreshToken);
     }
 
+    @Transactional
     public void logout(String email) {
 
         User user = userRepository.findByEmail(email).orElseThrow(

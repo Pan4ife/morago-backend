@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class TranslatorProfileResponse {
+public class    TranslatorProfileResponse {
 
     private Long id;
 
