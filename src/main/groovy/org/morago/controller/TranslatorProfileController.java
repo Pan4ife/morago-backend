@@ -1,5 +1,6 @@
 package org.morago.controller;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.translatorprofile.TranslatorProfileRequest;
 import org.morago.dto.translatorprofile.TranslatorProfileResponse;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/translator-profile")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth")
 public class TranslatorProfileController {
 
     private final TranslatorProfileService translatorProfileService;
