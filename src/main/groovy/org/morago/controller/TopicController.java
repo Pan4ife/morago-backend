@@ -7,6 +7,7 @@ import org.morago.dto.topic.TopicRequest;
 import org.morago.dto.topic.TopicResponse;
 import org.morago.service.TopicService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,6 +26,7 @@ public class TopicController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TopicResponse> create(
         @RequestBody TopicRequest request) {
 
@@ -33,6 +35,7 @@ public class TopicController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> delete(
             @PathVariable Long id) {
 

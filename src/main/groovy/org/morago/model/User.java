@@ -26,7 +26,7 @@ public class User {
 
     private LocalDateTime updatedAt;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
