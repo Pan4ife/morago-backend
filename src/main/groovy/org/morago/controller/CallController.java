@@ -47,4 +47,19 @@ public class CallController {
 
     }
 
+    @PatchMapping("/{id}/finish")
+    public ResponseEntity<CallResponse> finish(@PathVariable Long id) {
+        return ResponseEntity.ok(callService.finish(id));
+    }
+
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<CallResponse> cancel(@PathVariable Long id) {
+        return ResponseEntity.ok(callService.cancel(id));
+    }
+
+    @PatchMapping("/{id}/start")
+    public ResponseEntity<CallResponse> start(@PathVariable Long id) {
+        return ResponseEntity.ok(callService.start(id));
+    }
+
 }

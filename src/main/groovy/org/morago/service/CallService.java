@@ -89,4 +89,119 @@ public class CallService {
 
     }
 
+    public CallResponse finish(Long id) {
+
+        Call call = callRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Call not found"));
+
+        if (call.getStatus() == CallStatus.FINISHED) {
+            throw new RuntimeException("Call already finished");
+        }
+
+        if (call.getStatus() == CallStatus.CANCELLED) {
+            throw new RuntimeException("Call already cancelled");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        call.setStatus(CallStatus.FINISHED);
+
+        call.setEndTime(now);
+
+        call.setUpdatedAt(now);
+
+        Call savedCall = callRepository.save(call);
+
+        return new CallResponse(
+                savedCall.getId(),
+
+                savedCall.getClient().getEmail(),
+
+                savedCall.getTranslator().getUser().getEmail(),
+
+                savedCall.getStatus(),
+
+                savedCall.getCost()
+        );
+
+    }
+
+    public CallResponse cancel(Long id) {
+
+        Call call = callRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Call not found"));
+
+        if (call.getStatus() == CallStatus.FINISHED) {
+            throw new RuntimeException("Call already finished");
+        }
+
+        if (call.getStatus() == CallStatus.CANCELLED) {
+            throw new RuntimeException("Call already cancelled");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        call.setStatus(CallStatus.CANCELLED);
+
+        call.setEndTime(now);
+
+        call.setUpdatedAt(now);
+
+        Call savedCall = callRepository.save(call);
+
+        return new CallResponse(
+                savedCall.getId(),
+
+                savedCall.getClient().getEmail(),
+
+                savedCall.getTranslator().getUser().getEmail(),
+
+                savedCall.getStatus(),
+
+                savedCall.getCost()
+        );
+
+    }
+
+    public CallResponse start(Long id) {
+
+        Call call = callRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Call not found"));
+
+        if (call.getStatus() == CallStatus.IN_PROGRESS) {
+            throw new RuntimeException("Call already started");
+        }
+
+        if (call.getStatus() == CallStatus.FINISHED) {
+            throw new RuntimeException("Call already finished");
+        }
+
+        if (call.getStatus() == CallStatus.CANCELLED) {
+            throw new RuntimeException("Call already cancelled");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        call.setStatus(CallStatus.IN_PROGRESS);
+
+        call.setUpdatedAt(now);
+
+        Call savedCall = callRepository.save(call);
+
+        return new CallResponse(
+                savedCall.getId(),
+
+                savedCall.getClient().getEmail(),
+
+                savedCall.getTranslator().getUser().getEmail(),
+
+                savedCall.getStatus(),
+
+                savedCall.getCost()
+        );
+
+    }
+
 }
