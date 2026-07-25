@@ -19,9 +19,9 @@ public class CallController {
     private final CallService callService;
 
     @GetMapping
-    public ResponseEntity<List<CallResponse>> getAll() {
+    public ResponseEntity<List<CallResponse>> getAll(Authentication authentication) {
 
-        return ResponseEntity.ok(callService.getAll());
+        return ResponseEntity.ok(callService.getAll(authentication.getName()));
 
     }
 
@@ -39,27 +39,50 @@ public class CallController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(@PathVariable Long id) {
+    public ResponseEntity<String> delete(
+            @PathVariable Long id,
+            Authentication authentication) {
 
-        callService.delete(id);
+        callService.delete(
+                        id,
+                        authentication.getName()
+        );
 
         return ResponseEntity.ok("Call deleted");
 
     }
 
     @PatchMapping("/{id}/finish")
-    public ResponseEntity<CallResponse> finish(@PathVariable Long id) {
-        return ResponseEntity.ok(callService.finish(id));
+    public ResponseEntity<CallResponse> finish(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        return ResponseEntity.ok(callService.finish(
+                id,
+                authentication.getName())
+        );
     }
 
     @PatchMapping("/{id}/cancel")
-    public ResponseEntity<CallResponse> cancel(@PathVariable Long id) {
-        return ResponseEntity.ok(callService.cancel(id));
+    public ResponseEntity<CallResponse> cancel(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        return ResponseEntity.ok(callService.cancel(
+                id,
+                authentication.getName())
+        );
     }
 
     @PatchMapping("/{id}/start")
-    public ResponseEntity<CallResponse> start(@PathVariable Long id) {
-        return ResponseEntity.ok(callService.start(id));
+    public ResponseEntity<CallResponse> start(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        return ResponseEntity.ok(callService.start(
+                id,
+                authentication.getName())
+        );
     }
 
 }

@@ -3,10 +3,7 @@ package org.morago.service;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.call.CallRequest;
 import org.morago.dto.call.CallResponse;
-import org.morago.model.Call;
-import org.morago.model.CallStatus;
-import org.morago.model.TranslatorProfile;
-import org.morago.model.User;
+import org.morago.model.*;
 import org.morago.repository.CallRepository;
 import org.morago.repository.TranslatorProfileRepository;
 import org.morago.repository.UserRepository;
@@ -27,14 +24,66 @@ public class CallService {
     private final TranslatorProfileRepository translatorProfileRepository;
 
 
+    private boolean isAdmin(User user) {
+        return user.getRoles()
+                .stream()
+                .anyMatch(role -> role.getName() == RoleName.ADMIN);
+    }
+
+    private User getCurrentUser(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+    }
+
+    private void validateCallStatus(Call call) {
+        if (call.getStatus() == CallStatus.FINISHED) {
+            throw new RuntimeException("Call already finished");
+        }
+
+        if (call.getStatus() == CallStatus.CANCELLED) {
+            throw new RuntimeException("Call already cancelled");
+        }
+    }
+
+    private void validateTranslatorAccess(Call call, User user) {
+
+        if (!isAdmin(user) &&
+                !call.getTranslator()
+                        .getUser()
+                        .getId()
+                        .equals(user.getId())) {
+            throw new RuntimeException("Access denied");
+        }
+    }
+
+    private void validateClientAccess(Call call, User user) {
+        if (!isAdmin(user) &&
+                !call.getClient()
+                        .getId()
+                        .equals(user.getId())) {
+            throw new RuntimeException("Access denied");
+        }
+    }
+
+    private CallResponse mapToResponse(Call call) {
+
+        return new CallResponse(
+                call.getId(),
+                call.getClient().getEmail(),
+                call.getTranslator().getUser().getEmail(),
+                call.getStatus(),
+                call.getCost()
+        );
+    }
+
+
     public CallResponse create(
             String email,
             CallRequest request
     ) {
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+        User user = getCurrentUser(email);
 
         TranslatorProfile translator = translatorProfileRepository.findById(request.getTranslatorId())
                 .orElseThrow(() ->
@@ -50,7 +99,7 @@ public class CallService {
 
         call.setStatus(CallStatus.CREATED);
 
-        call.setStartTime(now);
+        call.setStartTime(null);
 
         call.setCost(BigDecimal.ZERO);
 
@@ -58,50 +107,80 @@ public class CallService {
 
         Call savedCall = callRepository.save(call);
 
-        return new CallResponse(savedCall.getId(),
-                savedCall.getClient().getEmail(),
-                savedCall.getTranslator().getUser().getEmail(),
-                savedCall.getStatus(),
-                savedCall.getCost()
-        );
+        return mapToResponse(savedCall);
 
     }
 
-    public List<CallResponse> getAll() {
+    public List<CallResponse> getAll(String email) {
 
-        return callRepository.findAll()
+        User currentUser = getCurrentUser(email);
+
+        if (isAdmin(currentUser)) {
+
+            return callRepository.findAll()
+                    .stream()
+                    .map(this::mapToResponse)
+                    .toList();
+        }
+
+        if (currentUser.getTranslatorProfile() != null) {
+
+            return callRepository.findByTranslator_User(currentUser)
+                    .stream()
+                    .map(call -> new CallResponse(
+                            call.getId(),
+                            call.getClient().getEmail(),
+                            call.getTranslator().getUser().getEmail(),
+                            call.getStatus(),
+                            call.getCost()
+                    ))
+                    .toList();
+        }
+
+        return callRepository.findByClient(currentUser)
                 .stream()
-                .map(call ->
-                        new CallResponse(
-                                call.getId(),
-                                call.getClient().getEmail(),
-                                call.getTranslator().getUser().getEmail(),
-                                call.getStatus(),
-                                call.getCost()
-                        )
-                )
+                .map(call -> new CallResponse(
+                        call.getId(),
+                        call.getClient().getEmail(),
+                        call.getTranslator().getUser().getEmail(),
+                        call.getStatus(),
+                        call.getCost()
+                ))
                 .toList();
-    }
-
-    public void delete(Long id) {
-
-        callRepository.deleteById(id);
 
     }
 
-    public CallResponse finish(Long id) {
+    public void delete(Long id, String email) {
+
+        User currentUser = getCurrentUser(email);
+
+        boolean admin = isAdmin(currentUser);
+
+        if (!admin) {
+            throw new RuntimeException("Access denied");
+        }
+
+        Call call = callRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException("Call not found"));
+
+        callRepository.delete(call);
+
+    }
+
+    public CallResponse finish(Long id, String email) {
 
         Call call = callRepository.findById(id)
                 .orElseThrow(() ->
                         new RuntimeException("Call not found"));
 
-        if (call.getStatus() == CallStatus.FINISHED) {
-            throw new RuntimeException("Call already finished");
-        }
+        User currentUser = getCurrentUser(email);
 
-        if (call.getStatus() == CallStatus.CANCELLED) {
-            throw new RuntimeException("Call already cancelled");
-        }
+
+        validateTranslatorAccess(call, currentUser);
+
+        validateCallStatus(call);
+
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -113,33 +192,25 @@ public class CallService {
 
         Call savedCall = callRepository.save(call);
 
-        return new CallResponse(
-                savedCall.getId(),
-
-                savedCall.getClient().getEmail(),
-
-                savedCall.getTranslator().getUser().getEmail(),
-
-                savedCall.getStatus(),
-
-                savedCall.getCost()
-        );
+        return mapToResponse(savedCall);
 
     }
 
-    public CallResponse cancel(Long id) {
+    public CallResponse cancel(Long id, String email) {
 
         Call call = callRepository.findById(id)
                 .orElseThrow(() ->
                         new RuntimeException("Call not found"));
 
-        if (call.getStatus() == CallStatus.FINISHED) {
-            throw new RuntimeException("Call already finished");
-        }
+        User currentUser = getCurrentUser(email);
 
-        if (call.getStatus() == CallStatus.CANCELLED) {
-            throw new RuntimeException("Call already cancelled");
-        }
+
+
+        validateClientAccess(call, currentUser);
+
+
+        validateCallStatus(call);
+
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -151,36 +222,28 @@ public class CallService {
 
         Call savedCall = callRepository.save(call);
 
-        return new CallResponse(
-                savedCall.getId(),
-
-                savedCall.getClient().getEmail(),
-
-                savedCall.getTranslator().getUser().getEmail(),
-
-                savedCall.getStatus(),
-
-                savedCall.getCost()
-        );
+        return mapToResponse(savedCall);
 
     }
 
-    public CallResponse start(Long id) {
+    public CallResponse start(Long id, String email) {
 
         Call call = callRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Call not found"));
+
+        User currentUser = getCurrentUser(email);
+
+
+
+        validateTranslatorAccess(call, currentUser);
 
         if (call.getStatus() == CallStatus.IN_PROGRESS) {
             throw new RuntimeException("Call already started");
         }
 
-        if (call.getStatus() == CallStatus.FINISHED) {
-            throw new RuntimeException("Call already finished");
-        }
 
-        if (call.getStatus() == CallStatus.CANCELLED) {
-            throw new RuntimeException("Call already cancelled");
-        }
+        validateCallStatus(call);
+
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -188,19 +251,11 @@ public class CallService {
 
         call.setUpdatedAt(now);
 
+        call.setStartTime(now);
+
         Call savedCall = callRepository.save(call);
 
-        return new CallResponse(
-                savedCall.getId(),
-
-                savedCall.getClient().getEmail(),
-
-                savedCall.getTranslator().getUser().getEmail(),
-
-                savedCall.getStatus(),
-
-                savedCall.getCost()
-        );
+        return mapToResponse(savedCall);
 
     }
 
