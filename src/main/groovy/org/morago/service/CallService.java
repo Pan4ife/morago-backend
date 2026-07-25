@@ -179,8 +179,9 @@ public class CallService {
 
         validateTranslatorAccess(call, currentUser);
 
-        validateCallStatus(call);
-
+        if (call.getStatus() != CallStatus.IN_PROGRESS) {
+            throw new RuntimeException("Call can only be finished from IN_PROGRESS status");
+        }
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -237,12 +238,9 @@ public class CallService {
 
         validateTranslatorAccess(call, currentUser);
 
-        if (call.getStatus() == CallStatus.IN_PROGRESS) {
-            throw new RuntimeException("Call already started");
+        if (call.getStatus() != CallStatus.CREATED) {
+            throw new RuntimeException("Call can only be started from CREATED status");
         }
-
-
-        validateCallStatus(call);
 
 
         LocalDateTime now = LocalDateTime.now();
