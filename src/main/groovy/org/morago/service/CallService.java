@@ -10,6 +10,7 @@ import org.morago.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -183,13 +184,15 @@ public class CallService {
             throw new RuntimeException("Call can only be finished from IN_PROGRESS status");
         }
 
-        LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now();
 
         call.setStatus(CallStatus.FINISHED);
 
         call.setEndTime(now);
 
         call.setUpdatedAt(now);
+
+        Duration.between(call.getStartTime(), now);
 
         Call savedCall = callRepository.save(call);
 
@@ -247,9 +250,8 @@ public class CallService {
 
         call.setStatus(CallStatus.IN_PROGRESS);
 
-        call.setUpdatedAt(now);
-
         call.setStartTime(now);
+        call.setUpdatedAt(now);
 
         Call savedCall = callRepository.save(call);
 
