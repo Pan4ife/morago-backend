@@ -8,6 +8,9 @@ import lombok.Setter;
 @Setter
 public class ReviewRequest {
 
+    @NotNull
+    private Long callId;
+
     @Min(1)
     @Max(5)
     private Integer rating;

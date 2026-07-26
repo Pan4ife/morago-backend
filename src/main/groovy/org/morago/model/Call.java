@@ -41,4 +41,7 @@ public class Call {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @OneToOne(mappedBy = "call")
+    private Review review;
 }

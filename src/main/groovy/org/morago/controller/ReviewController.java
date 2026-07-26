@@ -5,6 +5,7 @@ import org.morago.dto.review.ReviewRequest;
 import org.morago.dto.review.ReviewResponse;
 import org.morago.service.ReviewService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,9 +25,10 @@ public class ReviewController {
 
     @PostMapping
     public ResponseEntity<ReviewResponse> create(
+            Authentication authentication,
             @RequestBody ReviewRequest request) {
 
-        return ResponseEntity.ok(reviewService.create(request)
+        return ResponseEntity.ok(reviewService.create(authentication.getName(), request)
         );
     }
 
