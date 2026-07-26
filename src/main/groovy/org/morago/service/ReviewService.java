@@ -3,6 +3,9 @@ package org.morago.service;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.review.ReviewRequest;
 import org.morago.dto.review.ReviewResponse;
+import org.morago.exception.AccessDeniedException;
+import org.morago.exception.ConflictException;
+import org.morago.exception.ResourceNotFoundException;
 import org.morago.model.*;
 import org.morago.repository.CallRepository;
 import org.morago.repository.ReviewRepository;
@@ -30,7 +33,7 @@ public class ReviewService {
     private User getCurrentUser(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+                        new ResourceNotFoundException("User not found"));
     }
 
 
@@ -54,20 +57,20 @@ public class ReviewService {
 
         Call call = callRepository.findById(request.getCallId())
                 .orElseThrow(() ->
-                        new RuntimeException("Call not found"));
+                        new ResourceNotFoundException("Call not found"));
 
         User currentUser = getCurrentUser(email);
 
         if (!call.getClient().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Access denied");
+            throw new AccessDeniedException("Access denied");
         }
 
         if (call.getStatus() != CallStatus.FINISHED) {
-            throw new RuntimeException("Call is not finished");
+            throw new ConflictException("Call is not finished");
         }
 
         if (call.getReview() != null) {
-            throw new RuntimeException("Review already exists");
+            throw new ConflictException("Review already exists");
         }
 
         Review review = new Review();

@@ -1,9 +1,9 @@
 package org.morago.service;
 
 import lombok.RequiredArgsConstructor;
-import org.morago.dto.language.LanguageResponse;
 import org.morago.dto.translatorprofile.TranslatorProfileRequest;
 import org.morago.dto.translatorprofile.TranslatorProfileResponse;
+import org.morago.exception.ResourceNotFoundException;
 import org.morago.model.Language;
 import org.morago.model.TranslatorProfile;
 import org.morago.model.User;
@@ -31,7 +31,7 @@ public class TranslatorProfileService {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(
-                        () -> new RuntimeException("User not found")
+                        () -> new ResourceNotFoundException("User not found")
                 );
 
         TranslatorProfile profile = new TranslatorProfile();
@@ -71,12 +71,12 @@ public class TranslatorProfileService {
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         TranslatorProfile profile =
                 translatorProfileRepository.findByUser(user)
                         .orElseThrow(() ->
-                                new RuntimeException("Profile not found"));
+                                new ResourceNotFoundException("Profile not found"));
 
         return new TranslatorProfileResponse(
                 profile.getId(),

@@ -3,6 +3,9 @@ package org.morago.service;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.call.CallRequest;
 import org.morago.dto.call.CallResponse;
+import org.morago.exception.AccessDeniedException;
+import org.morago.exception.ConflictException;
+import org.morago.exception.ResourceNotFoundException;
 import org.morago.model.*;
 import org.morago.repository.CallRepository;
 import org.morago.repository.TranslatorProfileRepository;
@@ -54,7 +57,7 @@ public class CallService {
                         .getUser()
                         .getId()
                         .equals(user.getId())) {
-            throw new RuntimeException("Access denied");
+            throw new AccessDeniedException("Access denied");
         }
     }
 
@@ -63,7 +66,7 @@ public class CallService {
                 !call.getClient()
                         .getId()
                         .equals(user.getId())) {
-            throw new RuntimeException("Access denied");
+            throw new AccessDeniedException("Access denied");
         }
     }
 
@@ -158,12 +161,12 @@ public class CallService {
         boolean admin = isAdmin(currentUser);
 
         if (!admin) {
-            throw new RuntimeException("Access denied");
+            throw new AccessDeniedException("Access denied");
         }
 
         Call call = callRepository.findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException("Call not found"));
+                                new ResourceNotFoundException("Call not found"));
 
         callRepository.delete(call);
 
@@ -173,7 +176,7 @@ public class CallService {
 
         Call call = callRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Call not found"));
+                        new ResourceNotFoundException("Call not found"));
 
         User currentUser = getCurrentUser(email);
 
@@ -181,7 +184,7 @@ public class CallService {
         validateTranslatorAccess(call, currentUser);
 
         if (call.getStatus() != CallStatus.IN_PROGRESS) {
-            throw new RuntimeException("Call can only be finished from IN_PROGRESS status");
+            throw new ConflictException("Call can only be finished from IN_PROGRESS status");
         }
 
             LocalDateTime now = LocalDateTime.now();
@@ -204,7 +207,7 @@ public class CallService {
 
         Call call = callRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Call not found"));
+                        new ResourceNotFoundException("Call not found"));
 
         User currentUser = getCurrentUser(email);
 
@@ -233,7 +236,7 @@ public class CallService {
     public CallResponse start(Long id, String email) {
 
         Call call = callRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Call not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found"));
 
         User currentUser = getCurrentUser(email);
 
@@ -242,7 +245,7 @@ public class CallService {
         validateTranslatorAccess(call, currentUser);
 
         if (call.getStatus() != CallStatus.CREATED) {
-            throw new RuntimeException("Call can only be started from CREATED status");
+            throw new ConflictException("Call can only be started from CREATED status");
         }
 
 
