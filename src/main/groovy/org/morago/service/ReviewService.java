@@ -36,6 +36,24 @@ public class ReviewService {
                         new ResourceNotFoundException("User not found"));
     }
 
+    private boolean isAdmin(User user) {
+        return user.getRoles()
+                .stream()
+                .anyMatch(role -> role.getName() == RoleName.ADMIN);
+    }
+
+    private void validateReviewAccess(Review review, User user) {
+
+        if (!isAdmin(user)
+                && !review.getCall()
+                .getClient()
+                .getId()
+                .equals(user.getId())) {
+
+            throw new AccessDeniedException("Access denied");
+        }
+    }
+
 
 
     public List<ReviewResponse> getAll() {
@@ -96,9 +114,17 @@ public class ReviewService {
         return new ReviewResponse(savedReview.getId(), savedReview.getRating(), savedReview.getComment());
     }
 
-    public void delete(Long id) {
+    public void delete(Long id, String email) {
 
-        reviewRepository.deleteById(id);
+        User currentUser = getCurrentUser(email);
+
+        Review review = reviewRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Review not found"));
+
+        validateReviewAccess(review, currentUser);
+
+        reviewRepository.delete(review);
 
     }
 
