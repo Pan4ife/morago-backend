@@ -1,5 +1,6 @@
 package org.morago.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.language.LanguageRequest;
 import org.morago.dto.language.LanguageResponse;
@@ -24,7 +25,7 @@ public class LanguageController {
 
     @PostMapping
     public ResponseEntity<LanguageResponse> create(
-            @RequestBody LanguageRequest request) {
+            @Valid @RequestBody LanguageRequest request) {
 
         return ResponseEntity.ok(languageService.create(request)
         );

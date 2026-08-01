@@ -1,5 +1,6 @@
 package org.morago.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 
@@ -28,7 +29,7 @@ public class TopicController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TopicResponse> create(
-        @RequestBody TopicRequest request) {
+        @Valid @RequestBody TopicRequest request) {
 
         return ResponseEntity.ok(topicService.create(request)
         );

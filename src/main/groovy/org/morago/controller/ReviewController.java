@@ -1,5 +1,6 @@
 package org.morago.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.review.ReviewRequest;
 import org.morago.dto.review.ReviewResponse;
@@ -26,7 +27,7 @@ public class ReviewController {
     @PostMapping
     public ResponseEntity<ReviewResponse> create(
             Authentication authentication,
-            @RequestBody ReviewRequest request) {
+            @Valid @RequestBody ReviewRequest request) {
 
         return ResponseEntity.ok(reviewService.create(authentication.getName(), request)
         );

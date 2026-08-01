@@ -1,6 +1,7 @@
 package org.morago.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.translatorprofile.TranslatorProfileRequest;
 import org.morago.dto.translatorprofile.TranslatorProfileResponse;
@@ -20,7 +21,7 @@ public class TranslatorProfileController {
     @PostMapping
     public ResponseEntity<TranslatorProfileResponse> create(
             Authentication authentication,
-            @RequestBody TranslatorProfileRequest request) {
+            @Valid @RequestBody TranslatorProfileRequest request) {
 
         return ResponseEntity.ok(
                 translatorProfileService.create(
