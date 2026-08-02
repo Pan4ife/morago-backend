@@ -114,6 +114,7 @@ public class ReviewService {
         return new ReviewResponse(savedReview.getId(), savedReview.getRating(), savedReview.getComment());
     }
 
+    @Transactional
     public void delete(Long id, String email) {
 
         User currentUser = getCurrentUser(email);
@@ -124,7 +125,19 @@ public class ReviewService {
 
         validateReviewAccess(review, currentUser);
 
+        TranslatorProfile translator = review.getCall().getTranslator();
+
+        Call call = review.getCall();
+        call.setReview(null);
+        review.setCall(null);
+
         reviewRepository.delete(review);
+
+        Double avg = reviewRepository.findAverageRatingByTranslatorId(translator.getId());
+
+        translator.setRating(avg == null ? 0.0 : avg);
+
+        translatorProfileRepository.save(translator);
 
     }
 
