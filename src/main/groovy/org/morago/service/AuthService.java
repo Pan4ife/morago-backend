@@ -1,5 +1,8 @@
 package org.morago.service;
 
+import org.morago.exception.ConflictException;
+import org.morago.exception.ResourceNotFoundException;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.auth.JwtResponse;
 import org.morago.dto.auth.LoginRequest;
@@ -47,7 +50,7 @@ public class AuthService {
 
         Role userRole = roleRepository.findByName(RoleName.USER)
                         .orElseThrow(
-                                () -> new RuntimeException("Role USER not found")
+                                () -> new ResourceNotFoundException("Role USER not found")
                         );
 
         user.setRoles(Set.of(userRole));
@@ -55,10 +58,11 @@ public class AuthService {
         userRepository.save(user);
     }
 
+    @Transactional
     public JwtResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (!passwordEncoder.matches(
                 request.password(),
@@ -90,15 +94,16 @@ public class AuthService {
 
     }
 
+    @Transactional
     public JwtResponse refresh(RefreshRequest request) {
 
         RefreshToken refreshTokenEntity = refreshTokenRepository.findByToken(request.refreshToken())
-                .orElseThrow(() -> new RuntimeException("Refresh token not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Refresh token not found"));
 
         String tokenType = jwtService.extractTokenType(refreshTokenEntity.getToken());
 
     if (!tokenType.equals("refresh")) {
-        throw new RuntimeException("Invalid token type");
+        throw new ConflictException("Invalid token type");
     }
 
         String username = jwtService.extractUsername(
@@ -106,7 +111,7 @@ public class AuthService {
             );
 
         User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         String accessToken = jwtService.generateAccessToken(user);
 
@@ -129,10 +134,11 @@ public class AuthService {
         return new JwtResponse(accessToken, refreshToken);
     }
 
+    @Transactional
     public void logout(String email) {
 
         User user = userRepository.findByEmail(email).orElseThrow(
-                () -> new RuntimeException("User not found")
+                () -> new ResourceNotFoundException("User not found")
         );
 
         refreshTokenRepository.deleteByUser(user);

@@ -23,12 +23,15 @@ public class TranslatorProfile {
 
     private Double rating = 0.0;
 
-    private boolean online;
+    private boolean online = false;
 
+    @Column(name = "hourly_rate")
     private Double hourlyRate;
 
-    private LocalDateTime createAt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @OneToOne
