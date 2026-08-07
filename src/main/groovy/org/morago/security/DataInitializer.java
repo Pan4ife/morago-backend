@@ -45,7 +45,7 @@ public class DataInitializer implements CommandLineRunner {
 
         User translator = new User();
         translator.setEmail("translator@morago.com");
-        translator.setPassword(passwordEncoder.encode("translator"));
+        translator.setPassword(passwordEncoder.encode("trans123"));
         translator.setRoles(Set.of(translatorRole));
         userRepository.save(translator);
     }
