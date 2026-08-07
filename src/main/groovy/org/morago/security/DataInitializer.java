@@ -27,9 +27,6 @@ public class DataInitializer implements CommandLineRunner {
         if (roleRepository.count() > 0) {
             return;
         }
-        Role adminRole = new Role();
-        adminRole.setName(RoleName.ADMIN);
-        roleRepository.save(adminRole);
 
         Role userRole = new Role();
         userRole.setName(RoleName.USER);
@@ -39,25 +36,17 @@ public class DataInitializer implements CommandLineRunner {
         translatorRole.setName(RoleName.TRANSLATOR);
         roleRepository.save(translatorRole);
 
-        User tripleRoleUser = new User(
-                "admin@morago.com",
-                passwordEncoder.encode("admin123"),
-                Set.of(userRole, adminRole, translatorRole)
-        );
-        userRepository.save(tripleRoleUser);
+        User user = new User();
+        user.setEmail("user@morago.com");
+        user.setPassword(passwordEncoder.encode("user123"));
+        user.setRoles(Set.of(userRole));
+        userRepository.save(user);
 
-        User doubleRoleUser = new User(
-                "user@morago.com",
-                passwordEncoder.encode("user123"),
-                Set.of(userRole, adminRole)
-        );
-        userRepository.save(doubleRoleUser);
 
-        User singleRoleUser = new User(
-                "translator@morago.com",
-                passwordEncoder.encode("translator123"),
-                Set.of(translatorRole)
-        );
-        userRepository.save(singleRoleUser);
+        User translator = new User();
+        translator.setEmail("translator@morago.com");
+        translator.setPassword(passwordEncoder.encode("translator"));
+        translator.setRoles(Set.of(translatorRole));
+        userRepository.save(translator);
     }
 }
