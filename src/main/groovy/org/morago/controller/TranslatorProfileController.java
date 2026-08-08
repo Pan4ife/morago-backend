@@ -6,12 +6,14 @@ import org.morago.dto.translatorprofile.TranslatorProfileRequest;
 import org.morago.dto.translatorprofile.TranslatorProfileResponse;
 import org.morago.service.TranslatorProfileService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/translator-profile")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('TRANSLATOR')")
 public class TranslatorProfileController {
 
     private final TranslatorProfileService translatorProfileService;
