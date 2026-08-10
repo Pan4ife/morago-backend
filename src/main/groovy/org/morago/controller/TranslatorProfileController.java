@@ -6,6 +6,7 @@ import org.morago.dto.translatorprofile.TranslatorProfileRequest;
 import org.morago.dto.translatorprofile.TranslatorProfileResponse;
 import org.morago.service.TranslatorProfileService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +18,7 @@ public class TranslatorProfileController {
     private final TranslatorProfileService translatorProfileService;
 
     @PostMapping
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<TranslatorProfileResponse> create(
             Authentication authentication,
             @Valid @RequestBody TranslatorProfileRequest request) {
@@ -30,6 +32,7 @@ public class TranslatorProfileController {
     }
 
     @GetMapping("/me")
+    @PreAuthorize("hasRole('USER') or hasRole('TRANSLATOR')")
     public ResponseEntity<TranslatorProfileResponse> getMyProfile(
             Authentication authentication
     ) {

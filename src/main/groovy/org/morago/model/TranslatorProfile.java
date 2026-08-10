@@ -25,6 +25,8 @@ public class TranslatorProfile {
 
     private boolean online = false;
 
+    private VerificationStatus status = VerificationStatus.PENDING;
+
     @Column(name = "hourly_rate")
     private Double hourlyRate;
 
@@ -34,6 +36,13 @@ public class TranslatorProfile {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "verified_at")
+    private LocalDateTime verifiedAt;
+
+    @Column(name = "verified_by")
+    private String verifiedBy;
+
+    private String reason;
     @OneToOne
     @JoinColumn(name = "user_id")
     private User user;

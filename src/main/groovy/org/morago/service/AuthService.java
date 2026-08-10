@@ -2,6 +2,7 @@ package org.morago.service;
 
 import org.morago.exception.ConflictException;
 import org.morago.exception.ResourceNotFoundException;
+import org.morago.model.*;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.auth.JwtResponse;
@@ -9,10 +10,6 @@ import org.morago.dto.auth.LoginRequest;
 import org.morago.dto.auth.RefreshRequest;
 import org.morago.dto.auth.RegisterRequest;
 
-import org.morago.model.RefreshToken;
-import org.morago.model.Role;
-import org.morago.model.RoleName;
-import org.morago.model.User;
 import org.morago.repository.RefreshTokenRepository;
 import org.morago.repository.RoleRepository;
 import org.morago.repository.UserRepository;
@@ -75,7 +72,10 @@ public class AuthService {
 
             throw new BadCredentialsException("Wrong password");
         }
+        if (user.getStatus() == UserStatus.BLOCKED) {
 
+            throw new BadCredentialsException("Account is blocked");
+        }
         String accessToken = jwtService.generateAccessToken(user);
 
         String refreshToken = jwtService.generateRefreshToken(user);

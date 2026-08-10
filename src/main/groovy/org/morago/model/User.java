@@ -31,6 +31,8 @@ public class User {
 
     private LocalDateTime updatedAt;
 
+    private UserStatus status = UserStatus.ACTIVE;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
