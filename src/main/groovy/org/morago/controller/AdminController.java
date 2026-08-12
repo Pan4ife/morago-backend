@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor
@@ -20,14 +21,16 @@ public class AdminController {
 
     private final AdminService adminService;
     @PatchMapping("/users/{id}/block")
-    public ResponseEntity<String> block(@PathVariable Long id){
-        adminService.blockUser(id);
+    public ResponseEntity<String> block(@PathVariable Long id, Authentication authentication){
+        String adminEmail  = authentication.getName();
+        adminService.blockUser(id, adminEmail);
         return ResponseEntity.ok("User was blocked");
     }
 
     @PatchMapping("/users/{id}/unblock")
-    public ResponseEntity<String> unblock(@PathVariable Long id){
-        adminService.unblockUser(id);
+    public ResponseEntity<String> unblock(@PathVariable Long id, Authentication authentication){
+        String adminEmail = authentication.getName();
+        adminService.unblockUser(id, adminEmail);
         return ResponseEntity.ok("User was unblocked");
     }
 
@@ -42,17 +45,21 @@ public class AdminController {
     }
 
     @PatchMapping("/translator-profiles/{id}/approve")
-    public ResponseEntity<String> approve(@PathVariable Long id){
-        adminService.approveTranslator(id);
+    public ResponseEntity<String> approve(@PathVariable Long id, Authentication authentication){
+        String adminEmail = authentication.getName();
+        adminService.approveTranslator(id, adminEmail);
         return ResponseEntity.ok("Translator approved");
     }
 
     @PatchMapping("/translator-profiles/{id}/reject")
     public ResponseEntity<String> reject(
             @PathVariable Long id,
-            @Valid @RequestBody RejectRequest request)
+            @Valid @RequestBody RejectRequest request,
+            Authentication authentication
+    )
     {
-        adminService.rejectTranslator(id, request.reason());
+        String adminEmail = authentication.getName();
+        adminService.rejectTranslator(id, request.reason(), adminEmail);
         return ResponseEntity.ok("Translator rejected");
     }
 }
