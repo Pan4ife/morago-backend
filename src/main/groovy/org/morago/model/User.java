@@ -30,7 +30,7 @@ public class User {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
-
+    @Enumerated(EnumType.STRING)
     private UserStatus status = UserStatus.ACTIVE;
 
     @ManyToMany(fetch = FetchType.EAGER)

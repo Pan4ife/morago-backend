@@ -25,6 +25,7 @@ public class TranslatorProfile {
 
     private boolean online = false;
 
+    @Enumerated(EnumType.STRING)
     private VerificationStatus status = VerificationStatus.PENDING;
 
     @Column(name = "hourly_rate")

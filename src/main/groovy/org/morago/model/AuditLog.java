@@ -15,13 +15,18 @@ public class AuditLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column
     private Long adminId;
+
     @Column
     @Enumerated(EnumType.STRING)
     private AuditActionType actionType;
+
     private Long targetId;
+
     @CreationTimestamp
     private LocalDateTime timestamp;
+
     private String reason;
 }

@@ -2,6 +2,7 @@ package org.morago.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.morago.dto.admin.PendingTranslatorResponse;
 import org.morago.dto.admin.RejectRequest;
 import org.morago.model.TranslatorProfile;
 import org.morago.service.AdminService;
@@ -35,7 +36,7 @@ public class AdminController {
     }
 
     @GetMapping("/translator-profiles/pending")
-    public ResponseEntity<Page<TranslatorProfile>> getPendingTranslators(
+    public ResponseEntity<Page<PendingTranslatorResponse>> getPendingTranslators(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
         ){
