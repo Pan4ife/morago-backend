@@ -3,6 +3,7 @@ package org.morago.controller;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.morago.dto.translatorprofile.HourlyRateRequest;
 import org.morago.dto.translatorprofile.TranslatorProfileRequest;
 import org.morago.dto.translatorprofile.TranslatorProfileResponse;
 import org.morago.service.TranslatorProfileService;
@@ -38,6 +39,19 @@ public class TranslatorProfileController {
 
         return ResponseEntity.ok(
                 translatorProfileService.getMyProfile(authentication)
+        );
+    }
+
+    @PatchMapping("/hourly-rate")
+    public ResponseEntity<TranslatorProfileResponse> updateHourlyRate(
+            Authentication authentication,
+            @Valid @RequestBody HourlyRateRequest request
+            ) {
+        return ResponseEntity.ok(
+                translatorProfileService.updateHourlyRate(
+                        authentication.getName(),
+                        request.hourlyRate()
+                )
         );
     }
 }

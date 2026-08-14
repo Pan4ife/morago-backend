@@ -31,6 +31,7 @@ public class Call {
 
     private LocalDateTime endTime;
 
+    @Column(precision = 19, scale = 2)
     private BigDecimal cost;
 
     @Enumerated(EnumType.STRING)

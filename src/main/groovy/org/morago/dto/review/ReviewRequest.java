@@ -1,20 +1,18 @@
 package org.morago.dto.review;
 
 import jakarta.validation.constraints.*;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
-public class ReviewRequest {
+public record ReviewRequest (
 
     @NotNull
-    private Long callId;
+    Long callId,
 
     @Min(1)
     @Max(5)
-    private Integer rating;
+    Integer rating,
 
     @NotBlank
-    private String comment;
+    String comment
+) {
+
 }

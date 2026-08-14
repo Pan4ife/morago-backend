@@ -11,8 +11,10 @@ import org.morago.repository.CallRepository;
 import org.morago.repository.TranslatorProfileRepository;
 import org.morago.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,6 +28,7 @@ public class CallService {
     private final UserRepository userRepository;
 
     private final TranslatorProfileRepository translatorProfileRepository;
+    private final TransactionService transactionService;
 
 
     private boolean isAdmin(User user) {
@@ -89,7 +92,7 @@ public class CallService {
 
         User user = getCurrentUser(email);
 
-        TranslatorProfile translator = translatorProfileRepository.findById(request.getTranslatorId())
+        TranslatorProfile translator = translatorProfileRepository.findById(request.translatorId())
                 .orElseThrow(() ->
                         new RuntimeException("Translator not found"));
 
@@ -172,9 +175,18 @@ public class CallService {
 
     }
 
+    /**
+     * Завершает звонок и рассчитывает его стоимость.
+     * <p>
+     * Правило округления: длительность звонка считается пропорционально
+     * по секундам (например, 7 минут 30 секунд = 7.5 минуты), без округления
+     * вверх/вниз до целой минуты. Итоговая стоимость округляется до 2 знаков
+     * после запятой (копейки) по правилу HALF_UP (0.5 округляется в большую сторону).
+     */
+    @Transactional
     public CallResponse finish(Long id, String email) {
 
-        Call call = callRepository.findById(id)
+        Call call = callRepository.findByIdForUpdate(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Call not found"));
 
@@ -187,15 +199,33 @@ public class CallService {
             throw new ConflictException("Call can only be finished from IN_PROGRESS status");
         }
 
-            LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
+
+        long seconds = Duration.between(call.getStartTime(), now).toSeconds();
+
+        if (seconds < 0) {
+            throw new ConflictException("Invalid call duration");
+        }
+
+        BigDecimal durationInMinutes = BigDecimal.valueOf(seconds)
+                        .divide(BigDecimal.valueOf(60), 6, RoundingMode.HALF_UP);
+
+        BigDecimal costPerMinutes = call.getTranslator().getHourlyRate()
+                        .divide(BigDecimal.valueOf(60), 6, RoundingMode.HALF_UP);
+
+        BigDecimal cost = durationInMinutes
+                .multiply(costPerMinutes)
+                        .setScale(2, RoundingMode.HALF_UP);
 
         call.setStatus(CallStatus.FINISHED);
-
         call.setEndTime(now);
-
         call.setUpdatedAt(now);
+        call.setCost(cost);
 
-        Duration.between(call.getStartTime(), now);
+        User client = call.getClient();
+        User translator = call.getTranslator().getUser();
+
+        transactionService.payForCall(client, translator, cost, call);
 
         Call savedCall = callRepository.save(call);
 

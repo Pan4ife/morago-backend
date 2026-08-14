@@ -1,0 +1,57 @@
+package org.morago.service;
+
+import lombok.RequiredArgsConstructor;
+import org.morago.exception.InsufficientBalanceException;
+import org.morago.exception.ResourceNotFoundException;
+import org.morago.model.User;
+import org.morago.model.WithdrawalRequest;
+import org.morago.model.WithdrawalStatus;
+import org.morago.repository.UserRepository;
+import org.morago.repository.WithdrawalRequestRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class WithdrawalRequestService {
+
+    private final WithdrawalRequestRepository withdrawalRequestRepository;
+    private final UserRepository userRepository;
+
+    @Transactional
+    public WithdrawalRequest create(String email, BigDecimal amount) {
+
+        User translator = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (translator.getBalance().compareTo(amount) < 0) {
+            throw new InsufficientBalanceException("Недостаточно средств для вывода");
+        }
+
+        translator.setBalance(translator.getBalance().subtract(amount));
+        userRepository.save(translator);
+
+        WithdrawalRequest request = new WithdrawalRequest();
+        request.setTranslator(translator);
+        request.setAmount(amount);
+        request.setStatus(WithdrawalStatus.PENDING);
+        request.setCreatedAt(LocalDateTime.now());
+
+        return withdrawalRequestRepository.save(request);
+    }
+
+    public List<WithdrawalRequest> getMyRequests(String email) {
+        User translator = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        return withdrawalRequestRepository.findByTranslatorIdOrderByCreatedAtDesc(translator.getId());
+    }
+
+    public List<WithdrawalRequest> getPendingRequests() {
+        return withdrawalRequestRepository.findByStatusOrderByCreatedAtDesc(WithdrawalStatus.PENDING);
+    }
+}

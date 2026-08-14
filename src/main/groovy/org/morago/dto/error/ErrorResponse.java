@@ -1,11 +1,8 @@
 package org.morago.dto.error;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+public record ErrorResponse (
 
-@Getter
-@AllArgsConstructor
-public class ErrorResponse {
+    String message
+) {
 
-    private String message;
 }

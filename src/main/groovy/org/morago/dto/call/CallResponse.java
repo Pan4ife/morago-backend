@@ -1,23 +1,23 @@
 package org.morago.dto.call;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+
 import org.morago.model.CallStatus;
 
 import java.math.BigDecimal;
 
-@Getter
-@AllArgsConstructor
-public class CallResponse {
 
-    private Long id;
+public record CallResponse (
 
-    private String clientEmail;
+    Long id,
 
-    private String translatorEmail;
+    String clientEmail,
 
-    private CallStatus status;
+    String translatorEmail,
 
-    private BigDecimal cost;
+    CallStatus status,
+
+    BigDecimal cost
+
+) {
 
 }
