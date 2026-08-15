@@ -2,6 +2,8 @@ package org.morago.service;
 
 import org.morago.exception.ConflictException;
 import org.morago.exception.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.auth.JwtResponse;
@@ -28,13 +30,11 @@ import java.util.Set;
 public class AuthService {
 
     private final UserRepository userRepository;
-
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-
     private final RoleRepository roleRepository;
-
     private final RefreshTokenRepository refreshTokenRepository;
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     public void register(RegisterRequest request) {
 
@@ -63,6 +63,7 @@ public class AuthService {
     @Transactional
     public JwtResponse login(LoginRequest request) {
 
+
         String normalizedEmail = request.email().trim().toLowerCase();
 
         User user = userRepository.findByEmail(normalizedEmail)
@@ -72,8 +73,9 @@ public class AuthService {
                 request.password(),
                 user.getPassword()
         )) {
-
+            log.warn("Login failed for email: {}" , normalizedEmail);
             throw new BadCredentialsException("Wrong password");
+
         }
 
         String accessToken = jwtService.generateAccessToken(user);
