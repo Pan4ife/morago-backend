@@ -6,6 +6,7 @@ import org.morago.dto.call.CallRequest;
 import org.morago.dto.call.CallResponse;
 import org.morago.service.CallService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +27,7 @@ public class CallController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<CallResponse> create(Authentication authentication,
                                                @Valid @RequestBody CallRequest request) {
 
@@ -53,6 +55,7 @@ public class CallController {
     }
 
     @PatchMapping("/{id}/finish")
+    @PreAuthorize("hasRole('TRANSLATOR') or hasRole('ADMIN')")
     public ResponseEntity<CallResponse> finish(
             @PathVariable Long id,
             Authentication authentication) {
@@ -64,6 +67,7 @@ public class CallController {
     }
 
     @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<CallResponse> cancel(
             @PathVariable Long id,
             Authentication authentication) {
@@ -75,6 +79,7 @@ public class CallController {
     }
 
     @PatchMapping("/{id}/start")
+    @PreAuthorize("hasRole('TRANSLATOR') or hasRole('ADMIN')")
     public ResponseEntity<CallResponse> start(
             @PathVariable Long id,
             Authentication authentication) {

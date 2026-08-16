@@ -38,20 +38,22 @@ public class AuthService {
 
     public void register(RegisterRequest request) {
 
-        if (userRepository.existsByEmail(request.email())) {
-            throw new BadCredentialsException("Invalid email or password");
+        String normalizedEmail = request.email().trim().toLowerCase();
+
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            throw new ConflictException("Current email already exists");
         }
 
         User user = new User();
 
-        user.setEmail(request.email());
+        user.setEmail(normalizedEmail);
 
         user.setPassword(passwordEncoder.encode(request.password()));
 
         Role userRole = roleRepository.findByName(RoleName.USER)
-                        .orElseThrow(
-                                () -> new ResourceNotFoundException("Role USER not found")
-                        );
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Role USER not found")
+                );
 
         user.setRoles(Set.of(userRole));
 
@@ -61,7 +63,9 @@ public class AuthService {
     @Transactional
     public JwtResponse login(LoginRequest request) {
 
-        User user = userRepository.findByEmail(request.email())
+        String normalizedEmail = request.email().trim().toLowerCase();
+
+        User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (!passwordEncoder.matches(
@@ -102,13 +106,17 @@ public class AuthService {
 
         String tokenType = jwtService.extractTokenType(refreshTokenEntity.getToken());
 
-    if (!tokenType.equals("refresh")) {
-        throw new ConflictException("Invalid token type");
-    }
+        if (!tokenType.equals("refresh")) {
+            throw new ConflictException("Invalid token type");
+        }
+
+        if (refreshTokenEntity.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BadCredentialsException("Refresh token expired");
+        }
 
         String username = jwtService.extractUsername(
                 refreshTokenEntity.getToken()
-            );
+        );
 
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));

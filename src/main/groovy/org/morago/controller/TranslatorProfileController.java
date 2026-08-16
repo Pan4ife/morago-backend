@@ -1,6 +1,5 @@
 package org.morago.controller;
 
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.translatorprofile.HourlyRateRequest;
@@ -8,13 +7,14 @@ import org.morago.dto.translatorprofile.TranslatorProfileRequest;
 import org.morago.dto.translatorprofile.TranslatorProfileResponse;
 import org.morago.service.TranslatorProfileService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/translator-profile")
 @RequiredArgsConstructor
-@SecurityRequirement(name = "bearerAuth")
+@PreAuthorize("hasRole('TRANSLATOR')")
 public class TranslatorProfileController {
 
     private final TranslatorProfileService translatorProfileService;
