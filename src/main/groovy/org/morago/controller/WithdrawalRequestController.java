@@ -78,4 +78,14 @@ public class WithdrawalRequestController {
                 )
         );
     }
+
+    @PatchMapping("/admin/{id}/paid")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<WithdrawalRequestResponse> markAsPaid(@PathVariable Long id) {
+        return ResponseEntity.ok(
+                withdrawalRequestService.toResponse(
+                        withdrawalRequestService.markAsPaid(id)
+                )
+        );
+    }
 }

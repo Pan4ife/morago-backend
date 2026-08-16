@@ -103,6 +103,21 @@ public class WithdrawalRequestService {
         );
     }
 
+    @Transactional
+    public WithdrawalRequest markAsPaid(Long requestId) {
+        WithdrawalRequest request = withdrawalRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Withdrawal request not found"));
+
+        if (request.getStatus() != WithdrawalStatus.APPROVED) {
+            throw new ConflictException("Only approved requests can be marked as paid");
+        }
+
+        request.setStatus(WithdrawalStatus.PAID);
+        request.setProcessedAt(LocalDateTime.now());
+
+        return withdrawalRequestRepository.save(request);
+    }
+
 
 
 }
