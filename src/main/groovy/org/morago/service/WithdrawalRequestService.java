@@ -1,6 +1,8 @@
 package org.morago.service;
 
 import lombok.RequiredArgsConstructor;
+import org.morago.dto.withdrawal.WithdrawalRequestResponse;
+import org.morago.exception.ConflictException;
 import org.morago.exception.InsufficientBalanceException;
 import org.morago.exception.ResourceNotFoundException;
 import org.morago.model.User;
@@ -54,4 +56,53 @@ public class WithdrawalRequestService {
     public List<WithdrawalRequest> getPendingRequests() {
         return withdrawalRequestRepository.findByStatusOrderByCreatedAtDesc(WithdrawalStatus.PENDING);
     }
+
+    @Transactional
+    public WithdrawalRequest approve(Long requestId) {
+
+        WithdrawalRequest request = withdrawalRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Withdrawal request not found"));
+
+        if (request.getStatus() != WithdrawalStatus.PENDING) {
+            throw new ConflictException("Only pending request can be approved");
+        }
+
+        request.setStatus(WithdrawalStatus.APPROVED);
+        request.setProcessedAt(LocalDateTime.now());
+
+        return withdrawalRequestRepository.save(request);
+    }
+
+    @Transactional
+    public WithdrawalRequest reject(Long requestId) {
+
+        WithdrawalRequest request = withdrawalRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Withdrawal request not found"));
+
+        if (request.getStatus() != WithdrawalStatus.PENDING) {
+            throw new ConflictException("Only pending requests can be rejected");
+        }
+
+        User translator = request.getTranslator();
+        translator.setBalance(translator.getBalance().add(request.getAmount()));
+        userRepository.save(translator);
+
+        request.setStatus(WithdrawalStatus.REJECTED);
+        request.setProcessedAt(LocalDateTime.now());
+
+        return withdrawalRequestRepository.save(request);
+    }
+
+    public WithdrawalRequestResponse toResponse(WithdrawalRequest request) {
+        return new WithdrawalRequestResponse(
+                request.getId(),
+                request.getAmount(),
+                request.getStatus(),
+                request.getCreatedAt(),
+                request.getProcessedAt()
+        );
+    }
+
+
+
 }
