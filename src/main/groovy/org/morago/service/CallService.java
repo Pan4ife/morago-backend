@@ -30,6 +30,7 @@ public class CallService {
     private final TranslatorProfileRepository translatorProfileRepository;
 
 
+
     private boolean isAdmin(User user) {
         return user.getRoles()
                 .stream()
@@ -202,7 +203,7 @@ public class CallService {
 
         validateTranslatorAccess(call, currentUser);
 
-        call savedCall = finishInternal(call);
+        Call savedCall = finishInternal(call);
 
         return mapToResponse(savedCall);
     }
