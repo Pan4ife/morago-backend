@@ -37,6 +37,8 @@ class SecurityIntegrationTests {
     private RoleRepository roleRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private MockMvc mockMvc;
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry){
@@ -44,9 +46,6 @@ class SecurityIntegrationTests {
         registry.add("spring.datasource.username", mysql::getUsername );
         registry.add("spring.datasource.password", mysql::getPassword);
     }
-
-    @Autowired
-    private MockMvc mockMvc;
 
     @Test
     void anonymousCannotCreateLanguage() throws Exception {
@@ -120,6 +119,52 @@ class SecurityIntegrationTests {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void interpreterCannotAccessOtherCall() throws Exception {
+        String adminToken = obtainAccessTokenWithRole("call-admin@morago.com", "password123", RoleName.ADMIN);
+
+        MvcResult languageResult = mockMvc.perform(post("/languages")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\": \"French\"}"))
+                .andReturn();
+        Long languageId = extractId(languageResult);
+
+        MvcResult topic = mockMvc.perform(post("/topics")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\": \"Topic 4\"}"))
+                .andReturn();
+        Long topicId = extractId(topic);
+
+        String userAccessToken = obtainAccessToken("user@morago.com", "password123");
+
+        MvcResult userRequestTranslatorProfile = mockMvc.perform(post("/translator-profile")
+                .header("Authorization", "Bearer " + userAccessToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"bio\": \"Bla Bla Bla\", \"languageIds\": ["+ languageId +"], \"topicIds\": ["+ topicId + "]}"))
+                .andReturn();
+        Long translatorProfileId = extractId(userRequestTranslatorProfile);
+
+        String clientAccessToken = obtainAccessToken("client@morago.com", "password123");
+
+        MvcResult clientCall = mockMvc.perform(post("/calls")
+                .header("Authorization", "Bearer " + clientAccessToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"translatorId\": "+ translatorProfileId +"}"))
+                .andReturn();
+        Long clientCallId = extractId(clientCall);
+
+        String wrongTranslatorAccessToken = obtainAccessTokenWithRole("wrong-translator@morago.com",
+                "password123", RoleName.TRANSLATOR);
+
+        MvcResult wrongTranslatorCalls = mockMvc.perform(patch("/calls/"+ clientCallId +"/start")
+                .header("Authorization", "Bearer " + wrongTranslatorAccessToken)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden()).andReturn();
+
+    }
+
     private String obtainAccessToken(String email, String password) throws Exception {
 
         mockMvc.perform(post("/auth/register")
@@ -160,8 +205,13 @@ class SecurityIntegrationTests {
         Role role = roleRepository.findByName(roleName).orElseThrow();
         user.getRoles().add(role);
         userRepository.save(user);
-
         return token;
+    }
+
+    private Long extractId(MvcResult result) throws Exception {
+        String responseBody = result.getResponse().getContentAsString();
+        JsonNode json = new ObjectMapper().readTree(responseBody);
+        return json.get("id").asLong();
     }
 
     @BeforeEach
