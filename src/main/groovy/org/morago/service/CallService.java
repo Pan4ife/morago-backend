@@ -29,6 +29,8 @@ public class CallService {
 
     private final TranslatorProfileRepository translatorProfileRepository;
 
+    private final TransactionService transactionService;
+
 
 
     private boolean isAdmin(User user) {
