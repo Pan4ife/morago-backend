@@ -250,6 +250,19 @@ public class CallService {
         BigDecimal cost = durationInMinutes
                 .multiply(costPerMinute)
                 .setScale(2, RoundingMode.HALF_UP);
+
+        call.setStatus(CallStatus.FINISHED);
+        call.setEndTime(now);
+        call.setUpdatedAt(now);
+        call.setDurationSeconds(seconds);
+        call.setCost(cost);
+
+        User client = call.getClient();
+        User translator = call.getTranslator().getUser();
+
+        transactionService.payForCall(client, translator, cost, call);
+
+        return callRepository.save(call);
     }
 
 //    public CallResponse finish(Long id, String email) {
