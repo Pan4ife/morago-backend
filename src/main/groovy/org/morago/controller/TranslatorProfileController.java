@@ -19,6 +19,7 @@ public class TranslatorProfileController {
     private final TranslatorProfileService translatorProfileService;
 
     @PostMapping
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<TranslatorProfileResponse> create(
             Authentication authentication,
             @Valid @RequestBody TranslatorProfileRequest request) {
@@ -32,6 +33,7 @@ public class TranslatorProfileController {
     }
 
     @GetMapping("/me")
+    @PreAuthorize("hasRole('USER') or hasRole('TRANSLATOR')")
     public ResponseEntity<TranslatorProfileResponse> getMyProfile(
             Authentication authentication
     ) {
