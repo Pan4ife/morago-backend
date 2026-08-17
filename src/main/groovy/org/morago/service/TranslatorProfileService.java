@@ -13,6 +13,7 @@ import org.morago.repository.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -52,7 +53,7 @@ public class TranslatorProfileService {
 
         profile.setCreatedAt(LocalDateTime.now());
         profile.setUpdatedAt(LocalDateTime.now());
-        profile.setHourlyRate(0.0);
+        profile.setHourlyRate(BigDecimal.ZERO);
 
         TranslatorProfile savedProfile = translatorProfileRepository.save(profile);
 
