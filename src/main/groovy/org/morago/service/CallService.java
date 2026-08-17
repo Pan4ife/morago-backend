@@ -11,6 +11,7 @@ import org.morago.repository.CallRepository;
 import org.morago.repository.TranslatorProfileRepository;
 import org.morago.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -77,6 +78,9 @@ public class CallService {
                 call.getClient().getEmail(),
                 call.getTranslator().getUser().getEmail(),
                 call.getStatus(),
+                call.getStartTime(),
+                call.getEndTime(),
+                call.getDurationSeconds(),
                 call.getCost()
         );
     }
@@ -136,6 +140,9 @@ public class CallService {
                             call.getClient().getEmail(),
                             call.getTranslator().getUser().getEmail(),
                             call.getStatus(),
+                            call.getStartTime(),
+                            call.getEndTime(),
+                            call.getDurationSeconds(),
                             call.getCost()
                     ))
                     .toList();
@@ -148,6 +155,9 @@ public class CallService {
                         call.getClient().getEmail(),
                         call.getTranslator().getUser().getEmail(),
                         call.getStatus(),
+                        call.getStartTime(),
+                        call.getEndTime(),
+                        call.getDurationSeconds(),
                         call.getCost()
                 ))
                 .toList();
@@ -172,36 +182,44 @@ public class CallService {
 
     }
 
+    @Transactional
     public CallResponse finish(Long id, String email) {
 
-        Call call = callRepository.findById(id)
+        Call call = callRepository.findByIdForUpdate(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Call not found"));
-
-        User currentUser = getCurrentUser(email);
-
-
-        validateTranslatorAccess(call, currentUser);
-
-        if (call.getStatus() != CallStatus.IN_PROGRESS) {
-            throw new ConflictException("Call can only be finished from IN_PROGRESS status");
-        }
-
-            LocalDateTime now = LocalDateTime.now();
-
-        call.setStatus(CallStatus.FINISHED);
-
-        call.setEndTime(now);
-
-        call.setUpdatedAt(now);
-
-        Duration.between(call.getStartTime(), now);
-
-        Call savedCall = callRepository.save(call);
-
-        return mapToResponse(savedCall);
-
     }
+
+//    public CallResponse finish(Long id, String email) {
+//
+//        Call call = callRepository.findById(id)
+//                .orElseThrow(() ->
+//                        new ResourceNotFoundException("Call not found"));
+//
+//        User currentUser = getCurrentUser(email);
+//
+//
+//        validateTranslatorAccess(call, currentUser);
+//
+//        if (call.getStatus() != CallStatus.IN_PROGRESS) {
+//            throw new ConflictException("Call can only be finished from IN_PROGRESS status");
+//        }
+//
+//            LocalDateTime now = LocalDateTime.now();
+//
+//        call.setStatus(CallStatus.FINISHED);
+//
+//        call.setEndTime(now);
+//
+//        call.setUpdatedAt(now);
+//
+//        Duration.between(call.getStartTime(), now);
+//
+//        Call savedCall = callRepository.save(call);
+//
+//        return mapToResponse(savedCall);
+//
+//    }
 
     public CallResponse cancel(Long id, String email) {
 
