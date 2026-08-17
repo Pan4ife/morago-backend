@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -182,12 +183,73 @@ public class CallService {
 
     }
 
+    /**
+     * Завершает звонок и рассчитывает его стоимость.
+     * <p>
+     * Правило округления: длительность звонка считается пропорционально
+     * по секундам (например, 7 минут 30 секунд = 7.5 минуты), без округления
+     * вверх/вниз до целой минуты. Итоговая стоимость округляется до 2 знаков
+     * после запятой (копейки) по правилу HALF_UP (0.5 округляется в большую сторону).
+     */
     @Transactional
     public CallResponse finish(Long id, String email) {
 
         Call call = callRepository.findByIdForUpdate(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Call not found"));
+
+        User currentUser = getCurrentUser(email);
+
+        validateTranslatorAccess(call, currentUser);
+
+        call savedCall = finishInternal(call);
+
+        return mapToResponse(savedCall);
+    }
+
+    /**
+     * Системное завершение звонка по таймауту.
+     * Не проверяет права доступа — вызывается планировщиком (scheduled job),
+     * а не пользователем через API.
+     */
+    @Transactional
+    public void finishByTimeout(Long id) {
+
+        Call call = callRepository.findByIdForUpdate(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Call not found"));
+
+        finishInternal(call);
+    }
+
+    /**
+     * Общая логика завершения звонка: проверка статуса, расчёт длительности
+     * и стоимости, списание/начисление баланса, перевод в статус FINISHED.
+     * Используется и ручным завершением, и автоматическим таймаутом.
+     */
+    private Call finishInternal(Call call) {
+
+        if (call.getStatus() != CallStatus.IN_PROGRESS) {
+            throw new ConflictException("Call can only be finished from IN_PROGRESS status");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        long seconds = Duration.between(call.getStartTime(), now).toSeconds();
+
+        if (seconds < 0) {
+            throw new ConflictException("Invalid call duration");
+        }
+
+        BigDecimal durationInMinutes = BigDecimal.valueOf(seconds)
+                .divide(BigDecimal.valueOf(60), 6, RoundingMode.HALF_UP);
+
+        BigDecimal costPerMinute = call.getTranslator().getHourlyRate()
+                .divide(BigDecimal.valueOf(60), 6, RoundingMode.HALF_UP);
+
+        BigDecimal cost = durationInMinutes
+                .multiply(costPerMinute)
+                .setScale(2, RoundingMode.HALF_UP);
     }
 
 //    public CallResponse finish(Long id, String email) {
