@@ -2,6 +2,7 @@ package org.morago.security;
 
 import lombok.RequiredArgsConstructor;
 import org.morago.model.User;
+import org.morago.model.UserStatus;
 import org.morago.repository.UserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -32,6 +33,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .username(user.getEmail())
                 .password(user.getPassword())
                 .authorities(authorities)
+                .accountLocked(user.getStatus() == UserStatus.BLOCKED)
                 .build();
     }
 }
