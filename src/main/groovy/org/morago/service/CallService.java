@@ -3,7 +3,7 @@ package org.morago.service;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.call.CallRequest;
 import org.morago.dto.call.CallResponse;
-import org.morago.exception.AccessDeniedException;
+import org.morago.exception.ForbiddenException;
 import org.morago.exception.ConflictException;
 import org.morago.exception.ResourceNotFoundException;
 import org.morago.model.*;
@@ -61,7 +61,7 @@ public class CallService {
                         .getUser()
                         .getId()
                         .equals(user.getId())) {
-            throw new AccessDeniedException("Access denied");
+            throw new ForbiddenException("Access denied");
         }
     }
 
@@ -70,7 +70,7 @@ public class CallService {
                 !call.getClient()
                         .getId()
                         .equals(user.getId())) {
-            throw new AccessDeniedException("Access denied");
+            throw new ForbiddenException("Access denied");
         }
     }
 
@@ -167,7 +167,7 @@ public class CallService {
         boolean admin = isAdmin(currentUser);
 
         if (!admin) {
-            throw new AccessDeniedException("Access denied");
+            throw new ForbiddenException("Access denied");
         }
 
         Call call = callRepository.findById(id)
