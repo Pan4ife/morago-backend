@@ -16,6 +16,8 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +29,12 @@ public class CallService {
 
     private final TranslatorProfileRepository translatorProfileRepository;
 
+    private static final Map<CallStatus, Set<CallStatus>> ALLOWED_TRANSITIONS = Map.of(
+            CallStatus.CREATED , Set.of(CallStatus.IN_PROGRESS, CallStatus.CANCELLED),
+            CallStatus.IN_PROGRESS, Set.of(CallStatus.FINISHED),
+            CallStatus.FINISHED, Set.of(),
+            CallStatus.CANCELLED, Set.of()
+    );
 
     private boolean isAdmin(User user) {
         return user.getRoles()
@@ -34,10 +42,18 @@ public class CallService {
                 .anyMatch(role -> role.getName() == RoleName.ADMIN);
     }
 
+    private boolean isOwner(Call call, User user){
+        return call.getClient().getId().equals(user.getId())||
+                call.getTranslator().getId().equals(user.getId());
+    }
+
     private User getCurrentUser(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
                         new RuntimeException("User not found"));
+    }
+    private void validateCallStatusTransition(CallStatus from, CallStatus to){
+        if (ALLOWED_TRANSITIONS)
     }
 
     private void validateCallStatus(Call call) {
@@ -70,6 +86,23 @@ public class CallService {
         }
     }
 
+    private void validateCallAccess(Call call, User user){
+
+            if(!isAdmin(user) && !call.getClient().getId().equals(user.getId())&&
+                    !call.getTranslator().getUser().getId().equals(user.getId())){
+                throw new ForbiddenException("Access denied");
+        }
+    }
+
+    public CallResponse getById(Long id, String email){
+        Call currentCall = callRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Call not found"));
+        User currentUser = getCurrentUser(email);
+        validateCallAccess(currentCall, currentUser);
+        return mapToResponse(currentCall);
+    }
+
     private CallResponse mapToResponse(Call call) {
 
         return new CallResponse(
@@ -92,6 +125,9 @@ public class CallService {
         TranslatorProfile translator = translatorProfileRepository.findById(request.getTranslatorId())
                 .orElseThrow(() ->
                         new RuntimeException("Translator not found"));
+        if (!translator.isOnline()){
+            throw new ConflictException("Translator is not available now");
+        }
 
         Call call = new Call();
 
