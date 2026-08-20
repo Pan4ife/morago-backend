@@ -3,13 +3,15 @@ package org.morago.service;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.call.CallRequest;
 import org.morago.dto.call.CallResponse;
-import org.morago.exception.AccessDeniedException;
+import org.morago.exception.ForbiddenException;
 import org.morago.exception.ConflictException;
 import org.morago.exception.ResourceNotFoundException;
 import org.morago.model.*;
 import org.morago.repository.CallRepository;
 import org.morago.repository.TranslatorProfileRepository;
 import org.morago.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -27,6 +29,8 @@ public class CallService {
 
     private final TranslatorProfileRepository translatorProfileRepository;
 
+    private static final Logger log = LoggerFactory.getLogger(CallService.class);
+
 
     private boolean isAdmin(User user) {
         return user.getRoles()
@@ -37,16 +41,16 @@ public class CallService {
     private User getCurrentUser(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+                        new ResourceNotFoundException("User not found"));
     }
 
     private void validateCallStatus(Call call) {
         if (call.getStatus() == CallStatus.FINISHED) {
-            throw new RuntimeException("Call already finished");
+            throw new ConflictException("Call already finished");
         }
 
         if (call.getStatus() == CallStatus.CANCELLED) {
-            throw new RuntimeException("Call already cancelled");
+            throw new ConflictException("Call already cancelled");
         }
     }
 
@@ -57,7 +61,7 @@ public class CallService {
                         .getUser()
                         .getId()
                         .equals(user.getId())) {
-            throw new AccessDeniedException("Access denied");
+            throw new ForbiddenException("Access denied");
         }
     }
 
@@ -66,7 +70,7 @@ public class CallService {
                 !call.getClient()
                         .getId()
                         .equals(user.getId())) {
-            throw new AccessDeniedException("Access denied");
+            throw new ForbiddenException("Access denied");
         }
     }
 
@@ -91,7 +95,7 @@ public class CallService {
 
         TranslatorProfile translator = translatorProfileRepository.findById(request.getTranslatorId())
                 .orElseThrow(() ->
-                        new RuntimeException("Translator not found"));
+                        new ResourceNotFoundException("Translator not found"));
 
         Call call = new Call();
 
@@ -110,6 +114,8 @@ public class CallService {
         call.setCreatedAt(now);
 
         Call savedCall = callRepository.save(call);
+
+        log.info("Call {} created by user  {}", savedCall.getId(), email);
 
         return mapToResponse(savedCall);
 
@@ -161,7 +167,7 @@ public class CallService {
         boolean admin = isAdmin(currentUser);
 
         if (!admin) {
-            throw new AccessDeniedException("Access denied");
+            throw new ForbiddenException("Access denied");
         }
 
         Call call = callRepository.findById(id)
@@ -170,6 +176,7 @@ public class CallService {
 
         callRepository.delete(call);
 
+        log.info("Call {} was deleted by user {}", id, email);
     }
 
     public CallResponse finish(Long id, String email) {
@@ -198,6 +205,8 @@ public class CallService {
         Duration.between(call.getStartTime(), now);
 
         Call savedCall = callRepository.save(call);
+
+        log.info("Call {} was finished by user {}", id, email);
 
         return mapToResponse(savedCall);
 
@@ -229,6 +238,8 @@ public class CallService {
 
         Call savedCall = callRepository.save(call);
 
+        log.info("Call {} was canceled by user {}", id, email);
+
         return mapToResponse(savedCall);
 
     }
@@ -257,6 +268,8 @@ public class CallService {
         call.setUpdatedAt(now);
 
         Call savedCall = callRepository.save(call);
+
+        log.info("Call {} was started by user {}", id, email);
 
         return mapToResponse(savedCall);
 

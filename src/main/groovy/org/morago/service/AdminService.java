@@ -2,7 +2,7 @@ package org.morago.service;
 
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.admin.PendingTranslatorResponse;
-import org.morago.exception.AccessDeniedException;
+import org.morago.exception.ForbiddenException;
 import org.morago.exception.ConflictException;
 import org.morago.exception.ResourceNotFoundException;
 import org.morago.model.*;
@@ -35,7 +35,7 @@ public class AdminService {
     private User getCurrentUser(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+                        new ResourceNotFoundException("User not found"));
     }
 
     private void logAction(Long adminId, AuditActionType actionType, Long targetId, String reason) {
@@ -54,7 +54,7 @@ public class AdminService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if(user.getId().equals(admin.getId())){
-            throw new AccessDeniedException("You cannot block YOURSELF");
+            throw new ForbiddenException("You cannot block YOURSELF");
         }
         user.setStatus(UserStatus.BLOCKED);
         refreshTokenRepository.deleteByUser(user);
