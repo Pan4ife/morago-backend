@@ -268,37 +268,6 @@ public class CallService {
         return callRepository.save(call);
     }
 
-//    public CallResponse finish(Long id, String email) {
-//
-//        Call call = callRepository.findById(id)
-//                .orElseThrow(() ->
-//                        new ResourceNotFoundException("Call not found"));
-//
-//        User currentUser = getCurrentUser(email);
-//
-//
-//        validateTranslatorAccess(call, currentUser);
-//
-//        if (call.getStatus() != CallStatus.IN_PROGRESS) {
-//            throw new ConflictException("Call can only be finished from IN_PROGRESS status");
-//        }
-//
-//            LocalDateTime now = LocalDateTime.now();
-//
-//        call.setStatus(CallStatus.FINISHED);
-//
-//        call.setEndTime(now);
-//
-//        call.setUpdatedAt(now);
-//
-//        Duration.between(call.getStartTime(), now);
-//
-//        Call savedCall = callRepository.save(call);
-//
-//        return mapToResponse(savedCall);
-//
-//    }
-
     public CallResponse cancel(Long id, String email) {
 
         Call call = callRepository.findById(id)

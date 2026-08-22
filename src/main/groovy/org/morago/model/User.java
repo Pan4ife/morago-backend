@@ -25,7 +25,7 @@ public class User {
 
     private String password;
 
-    private BigDecimal balance;
+    private BigDecimal balance = BigDecimal.ZERO;
 
     private LocalDateTime createdAt;
 
