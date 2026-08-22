@@ -52,17 +52,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (!jwtService.extractTokenType(token).equals("access")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            if(!userDetails.isAccountNonLocked()){
+            filterChain.doFilter(request, response);
+            return;
+            }
 
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                userDetails, null, userDetails.getAuthorities()
-        );
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    userDetails, null, userDetails.getAuthorities()
+            );
 
-        SecurityContextHolder.getContext()
-                        .setAuthentication(authentication);
-
+            SecurityContextHolder.getContext()
+                    .setAuthentication(authentication);
+        }
         filterChain.doFilter(request, response);
-
     }
 }
+

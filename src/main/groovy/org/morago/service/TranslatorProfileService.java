@@ -3,14 +3,17 @@ package org.morago.service;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.translatorprofile.TranslatorProfileRequest;
 import org.morago.dto.translatorprofile.TranslatorProfileResponse;
+import org.morago.exception.ResourceNotFoundException;
 import org.morago.model.Language;
 import org.morago.model.TranslatorProfile;
 import org.morago.model.User;
 import org.morago.repository.LanguageRepository;
 import org.morago.repository.TranslatorProfileRepository;
 import org.morago.repository.UserRepository;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -28,7 +31,7 @@ public class TranslatorProfileService {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(
-                        () -> new RuntimeException("User not found")
+                        () -> new ResourceNotFoundException("User not found")
                 );
 
         TranslatorProfile profile = new TranslatorProfile();
@@ -47,6 +50,10 @@ public class TranslatorProfileService {
 
         profile.setLanguages(languages);
 
+        profile.setCreatedAt(LocalDateTime.now());
+        profile.setUpdatedAt(LocalDateTime.now());
+        profile.setHourlyRate(0.0);
+
         TranslatorProfile savedProfile = translatorProfileRepository.save(profile);
 
         return new TranslatorProfileResponse(
@@ -55,6 +62,28 @@ public class TranslatorProfileService {
                 savedProfile.getBio(),
                 savedProfile.getRating(),
                 savedProfile.isOnline()
+        );
+    }
+
+    public TranslatorProfileResponse getMyProfile(
+            Authentication authentication
+    ) {
+        String email = authentication.getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        TranslatorProfile profile =
+                translatorProfileRepository.findByUser(user)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException("Profile not found"));
+
+        return new TranslatorProfileResponse(
+                profile.getId(),
+                user.getEmail(),
+                profile.getBio(),
+                profile.getRating(),
+                profile.isOnline()
         );
     }
 }

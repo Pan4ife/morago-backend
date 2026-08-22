@@ -1,15 +1,17 @@
 package org.morago.service;
 
+import org.morago.exception.ConflictException;
+import org.morago.exception.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.morago.model.*;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.auth.JwtResponse;
 import org.morago.dto.auth.LoginRequest;
 import org.morago.dto.auth.RefreshRequest;
 import org.morago.dto.auth.RegisterRequest;
 
-import org.morago.model.RefreshToken;
-import org.morago.model.Role;
-import org.morago.model.RoleName;
-import org.morago.model.User;
 import org.morago.repository.RefreshTokenRepository;
 import org.morago.repository.RoleRepository;
 import org.morago.repository.UserRepository;
@@ -25,49 +27,57 @@ import java.util.Set;
 public class AuthService {
 
     private final UserRepository userRepository;
-
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-
     private final RoleRepository roleRepository;
-
     private final RefreshTokenRepository refreshTokenRepository;
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     public void register(RegisterRequest request) {
 
-        if (userRepository.existsByEmail(request.email())) {
-            throw new BadCredentialsException("Invalid email or password");
+        String normalizedEmail = request.email().trim().toLowerCase();
+
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            throw new ConflictException("Current email already exists");
         }
 
         User user = new User();
 
-        user.setEmail(request.email());
+        user.setEmail(normalizedEmail);
 
         user.setPassword(passwordEncoder.encode(request.password()));
 
         Role userRole = roleRepository.findByName(RoleName.USER)
-                        .orElseThrow(
-                                () -> new RuntimeException("Role USER not found")
-                        );
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Role USER not found")
+                );
 
         user.setRoles(Set.of(userRole));
 
         userRepository.save(user);
     }
 
+    @Transactional
     public JwtResponse login(LoginRequest request) {
 
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String normalizedEmail = request.email().trim().toLowerCase();
+
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (!passwordEncoder.matches(
                 request.password(),
                 user.getPassword()
         )) {
-
+            log.warn("Login failed for email: {}" , normalizedEmail);
             throw new BadCredentialsException("Wrong password");
-        }
 
+        }
+        if (user.getStatus() == UserStatus.BLOCKED) {
+
+            throw new BadCredentialsException("Account is blocked");
+        }
         String accessToken = jwtService.generateAccessToken(user);
 
         String refreshToken = jwtService.generateRefreshToken(user);
@@ -90,23 +100,28 @@ public class AuthService {
 
     }
 
+    @Transactional
     public JwtResponse refresh(RefreshRequest request) {
 
         RefreshToken refreshTokenEntity = refreshTokenRepository.findByToken(request.refreshToken())
-                .orElseThrow(() -> new RuntimeException("Refresh token not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Refresh token not found"));
 
         String tokenType = jwtService.extractTokenType(refreshTokenEntity.getToken());
 
-    if (!tokenType.equals("refresh")) {
-        throw new RuntimeException("Invalid token type");
-    }
+        if (!tokenType.equals("refresh")) {
+            throw new ConflictException("Invalid token type");
+        }
+
+        if (refreshTokenEntity.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BadCredentialsException("Refresh token expired");
+        }
 
         String username = jwtService.extractUsername(
                 refreshTokenEntity.getToken()
-            );
+        );
 
         User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         String accessToken = jwtService.generateAccessToken(user);
 
@@ -129,10 +144,11 @@ public class AuthService {
         return new JwtResponse(accessToken, refreshToken);
     }
 
+    @Transactional
     public void logout(String email) {
 
         User user = userRepository.findByEmail(email).orElseThrow(
-                () -> new RuntimeException("User not found")
+                () -> new ResourceNotFoundException("User not found")
         );
 
         refreshTokenRepository.deleteByUser(user);
