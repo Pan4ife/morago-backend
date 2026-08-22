@@ -27,11 +27,8 @@ import java.util.Set;
 public class CallService {
 
     private final CallRepository callRepository;
-
     private final UserRepository userRepository;
-
     private final TranslatorProfileRepository translatorProfileRepository;
-
     private static final Map<CallStatus, Set<CallStatus>> ALLOWED_TRANSITIONS =
             Map.of(
             CallStatus.CREATED, Set.of(CallStatus.IN_PROGRESS, CallStatus.CANCELLED),
@@ -40,7 +37,6 @@ public class CallService {
             CallStatus.CANCELLED, Set.of()
     );
     private static final Logger log = LoggerFactory.getLogger(CallService.class);
-
 
     private boolean isAdmin(User user) {
         return user.getRoles()
@@ -61,7 +57,6 @@ public class CallService {
             throw new InvalidCallStatusTransitionException("Invalid call status");
         }
     }
-
 
     private void validateTranslatorAccess(Call call, User user) {
 
@@ -110,7 +105,6 @@ public class CallService {
         );
     }
 
-
     public CallResponse create(
             String email,
             CallRequest request
@@ -137,7 +131,6 @@ public class CallService {
     }
 
     public List<CallResponse> getAll(String email) {
-
         User currentUser = getCurrentUser(email);
 
         if (isAdmin(currentUser)) {
