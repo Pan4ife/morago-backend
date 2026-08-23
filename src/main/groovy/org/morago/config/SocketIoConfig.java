@@ -2,12 +2,19 @@ package org.morago.config;
 
 import com.corundumstudio.socketio.*;
 import com.corundumstudio.socketio.listener.ConnectListener;
+import com.corundumstudio.socketio.listener.DataListener;
 import io.jsonwebtoken.JwtException;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
+import org.morago.dto.call.SignalJoinRequest;
+import org.morago.exception.ForbiddenException;
+import org.morago.exception.ResourceNotFoundException;
+import org.morago.model.Call;
 import org.morago.model.User;
 import org.morago.model.UserStatus;
+import org.morago.repository.CallRepository;
 import org.morago.repository.UserRepository;
+import org.morago.service.CallService;
 import org.morago.service.JwtService;
 import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
@@ -33,7 +40,9 @@ public class SocketIoConfig {
 
 
     @Bean
-    public SocketIOServer socketIOServer(JwtAuthorizationListener jwtAuthorizationListener, RoomForClient roomForClient) {
+    public SocketIOServer socketIOServer(JwtAuthorizationListener jwtAuthorizationListener,
+                                         RoomForClient roomForClient,
+                                         SignalJoinListener signalJoinListener) {
         com.corundumstudio.socketio.Configuration config = new com.corundumstudio.socketio.Configuration();
         config.setHostname(host);
         config.setPort(port);
@@ -41,6 +50,7 @@ public class SocketIoConfig {
         config.setAuthorizationListener(jwtAuthorizationListener);
         SocketIOServer socketIOServer = new SocketIOServer(config);
         socketIOServer.addConnectListener(roomForClient);
+        socketIOServer.addEventListener("signal:join", SignalJoinRequest.class, signalJoinListener);
         return socketIOServer;
     }
 
@@ -127,5 +137,31 @@ public class SocketIoConfig {
             client.joinRoom(room);
         }
     }
-
+    @Component
+    @RequiredArgsConstructor
+    static class SignalJoinListener implements DataListener<SignalJoinRequest>{
+        private final CallRepository callRepository;
+        private final UserRepository userRepository;
+        private final CallService callService;
+        @Override
+        public void onData(SocketIOClient client, SignalJoinRequest data, AckRequest ackSender) throws Exception {
+        Long clientId = client.get("userId");
+            if (clientId == null){
+                client.disconnect();
+                return;
+            }
+        Long callId =  data.callId();
+        Call call = callRepository.findById(callId)
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found"));
+        User user = userRepository.findById(clientId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        try {
+            callService.validateCallAccess(call, user);
+            client.joinRoom("call-" + String.valueOf(callId));
+            client.sendEvent("signal:joined");
+        } catch(ForbiddenException e) {
+            client.sendEvent("signal:error", e.getMessage());
+            }
+        }
+    }
 }
