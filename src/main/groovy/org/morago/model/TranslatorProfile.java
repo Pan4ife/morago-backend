@@ -26,7 +26,7 @@ public class TranslatorProfile {
 
     private boolean online = false;
 
-    @Column(name = "hourly_rate")
+    @Column(name = "hourly_rate", precision = 19, scale = 2)
     private BigDecimal hourlyRate;
 
     @Column(name = "created_at")

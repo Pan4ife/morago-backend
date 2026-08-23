@@ -3,6 +3,7 @@ package org.morago.service;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.translatorprofile.TranslatorProfileRequest;
 import org.morago.dto.translatorprofile.TranslatorProfileResponse;
+import org.morago.exception.InvalidAmountException;
 import org.morago.exception.ResourceNotFoundException;
 import org.morago.model.Language;
 import org.morago.model.TranslatorProfile;
@@ -12,6 +13,7 @@ import org.morago.repository.TranslatorProfileRepository;
 import org.morago.repository.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -39,21 +41,21 @@ public class TranslatorProfileService {
 
         profile.setUser(user);
 
-        profile.setBio(request.getBio());
+        profile.setBio(request.bio());
 
         profile.setRating(0.0);
 
         profile.setOnline(false);
 
         Set<Language> languages = new HashSet<>(
-                languageRepository.findAllById(request.getLanguageIds())
+                languageRepository.findAllById(request.languageIds())
         );
 
         profile.setLanguages(languages);
 
         profile.setCreatedAt(LocalDateTime.now());
         profile.setUpdatedAt(LocalDateTime.now());
-        profile.setHourlyRate(BigDecimal.ZERO);
+        profile.setHourlyRate(request.hourlyRate());
 
         TranslatorProfile savedProfile = translatorProfileRepository.save(profile);
 
@@ -62,7 +64,8 @@ public class TranslatorProfileService {
                 user.getEmail(),
                 savedProfile.getBio(),
                 savedProfile.getRating(),
-                savedProfile.isOnline()
+                savedProfile.isOnline(),
+                savedProfile.getHourlyRate()
         );
     }
 
@@ -84,7 +87,36 @@ public class TranslatorProfileService {
                 user.getEmail(),
                 profile.getBio(),
                 profile.getRating(),
-                profile.isOnline()
+                profile.isOnline(),
+                profile.getHourlyRate()
+        );
+    }
+
+    @Transactional
+    public TranslatorProfileResponse updateHourlyRate(String email, BigDecimal newRate) {
+
+        if (newRate.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidAmountException("Hourly rate must be positive");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        TranslatorProfile profile = translatorProfileRepository.findByUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found"));
+
+        profile.setHourlyRate(newRate);
+        profile.setUpdatedAt(LocalDateTime.now());
+
+        TranslatorProfile saved = translatorProfileRepository.save(profile);
+
+        return new TranslatorProfileResponse(
+                saved.getId(),
+                user.getEmail(),
+                saved.getBio(),
+                saved.getRating(),
+                saved.isOnline(),
+                saved.getHourlyRate()
         );
     }
 }
