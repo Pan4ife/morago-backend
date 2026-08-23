@@ -1,9 +1,7 @@
 package org.morago.config;
 
-import com.corundumstudio.socketio.AuthorizationListener;
-import com.corundumstudio.socketio.AuthorizationResult;
-import com.corundumstudio.socketio.HandshakeData;
-import com.corundumstudio.socketio.SocketIOServer;
+import com.corundumstudio.socketio.*;
+import com.corundumstudio.socketio.listener.ConnectListener;
 import io.jsonwebtoken.JwtException;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +17,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.Optional;
 
 @RequiredArgsConstructor
@@ -34,13 +33,15 @@ public class SocketIoConfig {
 
 
     @Bean
-    public SocketIOServer socketIOServer(JwtAuthorizationListener jwtAuthorizationListener) {
+    public SocketIOServer socketIOServer(JwtAuthorizationListener jwtAuthorizationListener, RoomForClient roomForClient) {
         com.corundumstudio.socketio.Configuration config = new com.corundumstudio.socketio.Configuration();
         config.setHostname(host);
         config.setPort(port);
         config.setOrigin(allowedOrigins);
         config.setAuthorizationListener(jwtAuthorizationListener);
-        return new SocketIOServer(config);
+        SocketIOServer socketIOServer = new SocketIOServer(config);
+        socketIOServer.addConnectListener(roomForClient);
+        return socketIOServer;
     }
 
     @Component
@@ -55,7 +56,6 @@ public class SocketIoConfig {
                 try {
                     socketIOServer.start();
                     log.info("SocketIoServer is launched");
-
                 } catch (RuntimeException e) {
                     log.error("SocketIoServer is unavailable", e);
                 }
@@ -106,7 +106,26 @@ public class SocketIoConfig {
             if (!jwtService.extractTokenType(token).equals("access")) {
                 return AuthorizationResult.FAILED_AUTHORIZATION;
             }
-            return AuthorizationResult.SUCCESSFUL_AUTHORIZATION;
+            Map<String, Object> storeParams = Map.of("userId", user.getId());
+            return new AuthorizationResult(true, storeParams);
         }
     }
+
+    @Component
+    @RequiredArgsConstructor
+    static class RoomForClient implements ConnectListener {
+        @Override
+        public void onConnect(SocketIOClient client) {
+            Long id = client.get("userId");
+
+            if (id == null){
+                client.disconnect();
+                return;
+            }
+
+            String room = String.valueOf(id);
+            client.joinRoom(room);
+        }
+    }
+
 }
