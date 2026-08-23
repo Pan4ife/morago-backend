@@ -1,8 +1,14 @@
 package org.morago.dto.error;
 
-public record ErrorResponse (
+import java.time.LocalDateTime;
+import java.util.Map;
 
-    String message
-) {
-
-}
+public record ErrorResponse(
+        LocalDateTime timestamp,
+        int status,
+        String code,
+        String message,
+        String path,
+        Map<String, String> validationErrors
+)
+{}
