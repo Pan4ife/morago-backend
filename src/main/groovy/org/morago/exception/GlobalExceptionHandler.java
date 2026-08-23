@@ -29,6 +29,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleExceptionInternal(
             Exception ex, Object body, HttpHeaders headers,
             HttpStatusCode statusCode, WebRequest request) {
+        Map<String, String> validationErrors = null;
+
+        if(ex instanceof MethodArgumentNotValidException manvEx){
+            validationErrors = manvEx.getBindingResult().getFieldErrors().stream()
+                    .collect(Collectors.toMap(
+                            FieldError::getField,
+                            error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : "Invalid value",
+                            (existing, replacement) -> existing + "; " + replacement)
+                    );
+        }
 
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
@@ -36,7 +46,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "REQUEST_ERROR",
                 ex.getMessage(),
                 request.getDescription(false),
-                null
+                validationErrors
         );
 
         return new ResponseEntity<>(errorResponse, headers, statusCode);
@@ -113,25 +123,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(errorResponse);
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
-        Map<String, String> validationErrors = ex.getBindingResult().getFieldErrors().stream()
-                .collect(Collectors.toMap(
-                        FieldError::getField,
-                        error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : "Invalid value",
-                        (existing, replacement) -> existing + "; " + replacement)
-                );
-        ErrorResponse errorResponse = new ErrorResponse(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                "VALIDATION_ERROR",
-                "Validation failed",
-                request.getRequestURI(),
-                validationErrors
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(errorResponse);
-    }
+
 
     @ExceptionHandler(InsufficientBalanceException.class)
     public ResponseEntity<ErrorResponse> handleInsufficientBalance(InsufficientBalanceException ex, HttpServletRequest request) {
@@ -159,6 +151,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         );
         log.error("Unexpected error on {} {}", request.getMethod(), request.getRequestURI(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(errorResponse);
+    }
+
+    @ExceptionHandler(InvalidCallStatusTransitionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCallStatusTransition(InvalidCallStatusTransitionException ex, HttpServletRequest request){
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                "INVALID_STATUS_TRANSITION",
+                ex.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(errorResponse);
     }
 }
