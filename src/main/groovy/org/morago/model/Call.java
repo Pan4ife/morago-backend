@@ -34,6 +34,8 @@ public class Call {
     @Column(precision = 19, scale = 2)
     private BigDecimal cost;
 
+    private Long durationSeconds;
+
     @Enumerated(EnumType.STRING)
     private CallStatus status;
 

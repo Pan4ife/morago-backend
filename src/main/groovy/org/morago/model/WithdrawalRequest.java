@@ -30,4 +30,7 @@ public class WithdrawalRequest {
     private LocalDateTime createdAt;
 
     private LocalDateTime processedAt;
+
+    @Column(name = "transaction_id")
+    private Long transactionId;
 }

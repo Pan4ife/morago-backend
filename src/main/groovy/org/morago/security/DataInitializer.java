@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.Set;
 
 @Component
@@ -39,25 +40,25 @@ public class DataInitializer implements CommandLineRunner {
         translatorRole.setName(RoleName.TRANSLATOR);
         roleRepository.save(translatorRole);
 
-        User tripleRoleUser = new User(
-                "admin@morago.com",
-                passwordEncoder.encode("admin123"),
-                Set.of(userRole, adminRole, translatorRole)
-        );
+        User tripleRoleUser = new User();
+        tripleRoleUser.setEmail("admin@morago.com");
+        tripleRoleUser.setPassword(passwordEncoder.encode("admin123"));
+        tripleRoleUser.setRoles(Set.of(userRole, adminRole, translatorRole));
+        tripleRoleUser.setBalance(BigDecimal.ZERO);
         userRepository.save(tripleRoleUser);
 
-        User doubleRoleUser = new User(
-                "user@morago.com",
-                passwordEncoder.encode("user123"),
-                Set.of(userRole, adminRole)
-        );
+        User doubleRoleUser = new User();
+        doubleRoleUser.setEmail("user@morago.com");
+        doubleRoleUser.setPassword(passwordEncoder.encode("user123"));
+        doubleRoleUser.setRoles(Set.of(userRole, adminRole));
+        doubleRoleUser.setBalance(BigDecimal.ZERO);
         userRepository.save(doubleRoleUser);
 
-        User singleRoleUser = new User(
-                "translator@morago.com",
-                passwordEncoder.encode("translator123"),
-                Set.of(translatorRole)
-        );
+        User singleRoleUser = new User();
+        singleRoleUser.setEmail("translator@morago.com");
+        singleRoleUser.setPassword(passwordEncoder.encode("translator123"));
+        singleRoleUser.setRoles(Set.of(translatorRole));
+        singleRoleUser.setBalance(BigDecimal.ZERO);
         userRepository.save(singleRoleUser);
     }
 }

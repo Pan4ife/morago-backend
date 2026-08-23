@@ -5,9 +5,8 @@ import org.morago.dto.withdrawal.WithdrawalRequestResponse;
 import org.morago.exception.ConflictException;
 import org.morago.exception.InsufficientBalanceException;
 import org.morago.exception.ResourceNotFoundException;
-import org.morago.model.User;
-import org.morago.model.WithdrawalRequest;
-import org.morago.model.WithdrawalStatus;
+import org.morago.model.*;
+import org.morago.repository.TransactionRepository;
 import org.morago.repository.UserRepository;
 import org.morago.repository.WithdrawalRequestRepository;
 import org.springframework.stereotype.Service;
@@ -23,6 +22,7 @@ public class WithdrawalRequestService {
 
     private final WithdrawalRequestRepository withdrawalRequestRepository;
     private final UserRepository userRepository;
+    private final TransactionRepository transactionRepository;
 
     @Transactional
     public WithdrawalRequest create(String email, BigDecimal amount) {
@@ -43,7 +43,19 @@ public class WithdrawalRequestService {
         request.setStatus(WithdrawalStatus.PENDING);
         request.setCreatedAt(LocalDateTime.now());
 
-        return withdrawalRequestRepository.save(request);
+        WithdrawalRequest savedRequest = withdrawalRequestRepository.save(request);
+
+        Transaction transaction = new Transaction();
+        transaction.setUser(translator);
+        transaction.setAmount(amount.negate());
+        transaction.setType(TransactionType.WITHDRAWAL);
+        transaction.setStatus(TransactionStatus.PENDING);
+        transaction.setCreatedAt(LocalDateTime.now());
+
+        Transaction savedTransaction = transactionRepository.save(transaction);
+
+        savedRequest.setTransactionId(savedTransaction.getId());
+        return withdrawalRequestRepository.save(savedRequest);
     }
 
     public List<WithdrawalRequest> getMyRequests(String email) {
@@ -90,17 +102,9 @@ public class WithdrawalRequestService {
         request.setStatus(WithdrawalStatus.REJECTED);
         request.setProcessedAt(LocalDateTime.now());
 
-        return withdrawalRequestRepository.save(request);
-    }
+        markTransactionAs(request.getTransactionId(), TransactionStatus.FAILED);
 
-    public WithdrawalRequestResponse toResponse(WithdrawalRequest request) {
-        return new WithdrawalRequestResponse(
-                request.getId(),
-                request.getAmount(),
-                request.getStatus(),
-                request.getCreatedAt(),
-                request.getProcessedAt()
-        );
+        return withdrawalRequestRepository.save(request);
     }
 
     @Transactional
@@ -115,9 +119,29 @@ public class WithdrawalRequestService {
         request.setStatus(WithdrawalStatus.PAID);
         request.setProcessedAt(LocalDateTime.now());
 
+        markTransactionAs(request.getTransactionId(), TransactionStatus.COMPLETED);
+
         return withdrawalRequestRepository.save(request);
     }
 
+    private void markTransactionAs(Long transactionId, TransactionStatus status) {
+        if (transactionId == null) {
+            return;
+        }
+        transactionRepository.findById(transactionId).ifPresent(transaction -> {
+            transaction.setStatus(status);
+            transaction.setCompletedAt(LocalDateTime.now());
+            transactionRepository.save(transaction);
+        });
+    }
 
-
+    public WithdrawalRequestResponse toResponse(WithdrawalRequest request) {
+        return new WithdrawalRequestResponse(
+                request.getId(),
+                request.getAmount(),
+                request.getStatus(),
+                request.getCreatedAt(),
+                request.getProcessedAt()
+        );
+    }
 }

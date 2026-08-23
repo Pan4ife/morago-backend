@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 
 public record HourlyRateRequest(
         @NotNull
-        @DecimalMin(value = "0.01", message = "Hpurly rate must be positive")
+        @DecimalMin(value = "0.01", message = "Hourly rate must be positive")
         BigDecimal hourlyRate
 ){
 }
