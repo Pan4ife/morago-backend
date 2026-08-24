@@ -7,6 +7,7 @@ import org.morago.dto.transaction.TransactionResponse;
 import org.morago.model.Transaction;
 import org.morago.service.TransactionService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +21,7 @@ public class TransactionController {
     private final TransactionService transactionService;
 
     @PostMapping("/top-up")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<TransactionResponse> topUp(
             Authentication authentication,
             @Valid @RequestBody TopUpRequest request

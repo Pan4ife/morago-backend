@@ -84,6 +84,9 @@ public class CallService {
                 call.getClient().getEmail(),
                 call.getTranslator().getUser().getEmail(),
                 call.getStatus(),
+                call.getStartTime(),
+                call.getEndTime(),
+                call.getDurationSeconds(),
                 call.getCost()
         );
     }
@@ -145,6 +148,9 @@ public class CallService {
                             call.getClient().getEmail(),
                             call.getTranslator().getUser().getEmail(),
                             call.getStatus(),
+                            call.getStartTime(),
+                            call.getEndTime(),
+                            call.getDurationSeconds(),
                             call.getCost()
                     ))
                     .toList();
@@ -157,6 +163,9 @@ public class CallService {
                         call.getClient().getEmail(),
                         call.getTranslator().getUser().getEmail(),
                         call.getStatus(),
+                        call.getStartTime(),
+                        call.getEndTime(),
+                        call.getDurationSeconds(),
                         call.getCost()
                 ))
                 .toList();
@@ -227,6 +236,7 @@ public class CallService {
         call.setStatus(CallStatus.FINISHED);
         call.setEndTime(now);
         call.setUpdatedAt(now);
+        call.setDurationSeconds(seconds);
         call.setCost(cost);
 
         User client = call.getClient();

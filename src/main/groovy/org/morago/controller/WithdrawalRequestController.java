@@ -20,6 +20,7 @@ public class WithdrawalRequestController {
     private final WithdrawalRequestService withdrawalRequestService;
 
     @PostMapping
+    @PreAuthorize("hasRole('TRANSLATOR')")
     public ResponseEntity<WithdrawalRequestResponse> create(
             Authentication authentication,
             @Valid @RequestBody WithdrawalCreateRequest request
@@ -35,6 +36,7 @@ public class WithdrawalRequestController {
     }
 
     @GetMapping("/my")
+    @PreAuthorize("hasRole('TRANSLATOR')")
     public ResponseEntity<List<WithdrawalRequestResponse>> getMyRequests(
             Authentication authentication
     ) {
