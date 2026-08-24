@@ -3,7 +3,7 @@ package org.morago.service;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.review.ReviewRequest;
 import org.morago.dto.review.ReviewResponse;
-import org.morago.exception.AccessDeniedException;
+import org.morago.exception.ForbiddenException;
 import org.morago.exception.ConflictException;
 import org.morago.exception.ResourceNotFoundException;
 import org.morago.model.*;
@@ -14,7 +14,6 @@ import org.morago.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -50,7 +49,7 @@ public class ReviewService {
                 .getId()
                 .equals(user.getId())) {
 
-            throw new AccessDeniedException("Access denied");
+            throw new ForbiddenException("Access denied");
         }
     }
 
@@ -80,7 +79,7 @@ public class ReviewService {
         User currentUser = getCurrentUser(email);
 
         if (!call.getClient().getId().equals(currentUser.getId())) {
-            throw new AccessDeniedException("Access denied");
+            throw new ForbiddenException("Access denied");
         }
 
         if (call.getStatus() != CallStatus.FINISHED) {

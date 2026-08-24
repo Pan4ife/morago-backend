@@ -1,11 +1,14 @@
 package org.morago.dto.error;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import java.time.LocalDateTime;
+import java.util.Map;
 
-@Getter
-@AllArgsConstructor
-public class ErrorResponse {
-
-    private String message;
-}
+public record ErrorResponse(
+        LocalDateTime timestamp,
+        int status,
+        String code,
+        String message,
+        String path,
+        Map<String, String> validationErrors
+)
+{}

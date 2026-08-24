@@ -2,6 +2,9 @@ package org.morago.service;
 
 import org.morago.exception.ConflictException;
 import org.morago.exception.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.morago.model.*;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.auth.JwtResponse;
@@ -9,10 +12,6 @@ import org.morago.dto.auth.LoginRequest;
 import org.morago.dto.auth.RefreshRequest;
 import org.morago.dto.auth.RegisterRequest;
 
-import org.morago.model.RefreshToken;
-import org.morago.model.Role;
-import org.morago.model.RoleName;
-import org.morago.model.User;
 import org.morago.repository.RefreshTokenRepository;
 import org.morago.repository.RoleRepository;
 import org.morago.repository.UserRepository;
@@ -29,13 +28,11 @@ import java.util.Set;
 public class AuthService {
 
     private final UserRepository userRepository;
-
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-
     private final RoleRepository roleRepository;
-
     private final RefreshTokenRepository refreshTokenRepository;
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     public void register(RegisterRequest request) {
 
@@ -66,6 +63,7 @@ public class AuthService {
     @Transactional
     public JwtResponse login(LoginRequest request) {
 
+
         String normalizedEmail = request.email().trim().toLowerCase();
 
         User user = userRepository.findByEmail(normalizedEmail)
@@ -75,10 +73,14 @@ public class AuthService {
                 request.password(),
                 user.getPassword()
         )) {
-
+            log.warn("Login failed for email: {}" , normalizedEmail);
             throw new BadCredentialsException("Wrong password");
-        }
 
+        }
+        if (user.getStatus() == UserStatus.BLOCKED) {
+
+            throw new BadCredentialsException("Account is blocked");
+        }
         String accessToken = jwtService.generateAccessToken(user);
 
         String refreshToken = jwtService.generateRefreshToken(user);
