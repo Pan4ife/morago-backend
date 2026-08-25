@@ -1,5 +1,6 @@
 package org.morago.dto.translatorprofile;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,4 +15,7 @@ public class TranslatorProfileRequest {
     private Set<Long> languageIds;
 
     private Set<Long> topicIds;
+
+    @NotNull
+    private Double hourlyRate;
 }

@@ -142,7 +142,10 @@ class SecurityIntegrationTests {
         MvcResult userRequestTranslatorProfile = mockMvc.perform(post("/translator-profile")
                 .header("Authorization", "Bearer " + userAccessToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"bio\": \"Bla Bla Bla\", \"languageIds\": ["+ languageId +"], \"topicIds\": ["+ topicId + "]}"))
+                        .content("{\"bio\": \"Bla Bla Bla\", " +
+                                "\"languageIds\": ["+ languageId +"], " +
+                                "\"topicIds\": ["+ topicId + "], " +
+                               "\"hourlyRate\":  500 }"))
                 .andReturn();
         Long translatorProfileId = extractId(userRequestTranslatorProfile);
 
