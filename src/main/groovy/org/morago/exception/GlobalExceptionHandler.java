@@ -113,24 +113,30 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(errorResponse);
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
+
         Map<String, String> validationErrors = ex.getBindingResult().getFieldErrors().stream()
                 .collect(Collectors.toMap(
                         FieldError::getField,
                         error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : "Invalid value",
                         (existing, replacement) -> existing + "; " + replacement)
                 );
+
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
                 "VALIDATION_ERROR",
                 "Validation failed",
-                request.getRequestURI(),
+                request.getDescription(false).replace("uri=", ""),
                 validationErrors
         );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(errorResponse);
+
+        return new ResponseEntity<>(errorResponse, headers, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(InsufficientBalanceException.class)
@@ -162,4 +168,3 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(errorResponse);
     }
 }
-

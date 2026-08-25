@@ -31,7 +31,7 @@ public class LanguageService {
 
         Language language = new Language();
 
-        language.setName(request.getName());
+        language.setName(request.name());
 
         Language savedLanguage = languageRepository.save(language);
 
