@@ -6,7 +6,7 @@ import com.corundumstudio.socketio.listener.DataListener;
 import io.jsonwebtoken.JwtException;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
-import org.morago.dto.call.SignalJoinRequest;
+import org.morago.dto.signaling.SignalJoinRequest;
 import org.morago.exception.ForbiddenException;
 import org.morago.exception.ResourceNotFoundException;
 import org.morago.model.Call;
