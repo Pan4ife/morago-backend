@@ -33,7 +33,7 @@ public class TopicService {
 
         Topic topic = new Topic();
 
-        topic.setName(request.getName());
+        topic.setName(request.name());
 
         Topic savedTopic = topicRepository.save(topic);
 

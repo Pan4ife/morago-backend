@@ -1,11 +1,8 @@
 package org.morago.dto.topic;
 
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
-public class TopicRequest {
+public record TopicRequest (
 
-    private String name;
-}
+    String name
+
+) {}
