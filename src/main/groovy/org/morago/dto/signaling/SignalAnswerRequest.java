@@ -3,7 +3,7 @@ package org.morago.dto.signaling;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record SignalOfferRequest(
+public record SignalAnswerRequest(
         @NotNull
         Long callId,
         @NotNull
@@ -11,3 +11,4 @@ public record SignalOfferRequest(
         String sdpMessage
 )
 {}
+

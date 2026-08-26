@@ -2,20 +2,15 @@ package org.morago.config;
 
 import com.corundumstudio.socketio.*;
 import com.corundumstudio.socketio.listener.ConnectListener;
-import com.corundumstudio.socketio.listener.DataListener;
 import io.jsonwebtoken.JwtException;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
-import org.morago.dto.signaling.SignalJoinRequest;
-import org.morago.exception.ForbiddenException;
-import org.morago.exception.ResourceNotFoundException;
-import org.morago.model.Call;
+import org.morago.dto.signaling.*;
 import org.morago.model.User;
 import org.morago.model.UserStatus;
-import org.morago.repository.CallRepository;
 import org.morago.repository.UserRepository;
-import org.morago.service.CallService;
 import org.morago.service.JwtService;
+import org.morago.signaling.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,13 +31,17 @@ public class SocketIoConfig {
     private int port;
     @Value("${socketio.allowed-origins}")
     private String allowedOrigins;
+    private final SignalJoinListener signalJoinListener;
+    private final JwtAuthorizationListener jwtAuthorizationListener;
+    private final RoomForClient roomForClient;
     private static final Logger log = LoggerFactory.getLogger(SocketIoConfig.class);
 
 
     @Bean
-    public SocketIOServer socketIOServer(JwtAuthorizationListener jwtAuthorizationListener,
-                                         RoomForClient roomForClient,
-                                         SignalJoinListener signalJoinListener) {
+    public SocketIOServer socketIOServer(SignalAnswerListener signalAnswerListener,
+                                         SignalOfferListener signalOfferListener,
+                                         SignalIceCandidateListener signalIceCandidateListener,
+                                         SignalLeaveListener signalLeaveListener) {
         com.corundumstudio.socketio.Configuration config = new com.corundumstudio.socketio.Configuration();
         config.setHostname(host);
         config.setPort(port);
@@ -51,6 +50,10 @@ public class SocketIoConfig {
         SocketIOServer socketIOServer = new SocketIOServer(config);
         socketIOServer.addConnectListener(roomForClient);
         socketIOServer.addEventListener("signal:join", SignalJoinRequest.class, signalJoinListener);
+        socketIOServer.addEventListener("signal:answer", SignalAnswerRequest.class, signalAnswerListener);
+        socketIOServer.addEventListener("signal:offer", SignalOfferRequest.class, signalOfferListener);
+        socketIOServer.addEventListener("signal:ice-candidate", SignalIceCandidateRequest.class, signalIceCandidateListener);
+        socketIOServer.addEventListener("signal:leave", SignalLeaveRequest.class, signalLeaveListener);
         return socketIOServer;
     }
 
@@ -77,11 +80,12 @@ public class SocketIoConfig {
             try {
                 socketIOServer.stop();
                 log.info("SocketIO server stopped");
-            } catch (RuntimeException e){
+            } catch (RuntimeException e) {
                 log.error("Error stopping SocketIO server", e);
             }
         }
     }
+
     @Component
     @RequiredArgsConstructor
     static class JwtAuthorizationListener implements AuthorizationListener {
@@ -97,19 +101,19 @@ public class SocketIoConfig {
             }
 
             try {
-                 username = jwtService.extractUsername(token);
+                username = jwtService.extractUsername(token);
             } catch (JwtException e) {
                 return AuthorizationResult.FAILED_AUTHORIZATION;
             }
 
             Optional<User> userOptional = userRepository.findByEmail(username);
 
-            if(userOptional.isEmpty()){
+            if (userOptional.isEmpty()) {
                 return AuthorizationResult.FAILED_AUTHORIZATION;
             }
             User user = userOptional.get();
 
-            if(user.getStatus() == UserStatus.BLOCKED){
+            if (user.getStatus() == UserStatus.BLOCKED) {
                 return AuthorizationResult.FAILED_AUTHORIZATION;
             }
 
@@ -128,40 +132,13 @@ public class SocketIoConfig {
         public void onConnect(SocketIOClient client) {
             Long id = client.get("userId");
 
-            if (id == null){
+            if (id == null) {
                 client.disconnect();
                 return;
             }
 
             String room = String.valueOf(id);
             client.joinRoom(room);
-        }
-    }
-    @Component
-    @RequiredArgsConstructor
-    static class SignalJoinListener implements DataListener<SignalJoinRequest>{
-        private final CallRepository callRepository;
-        private final UserRepository userRepository;
-        private final CallService callService;
-        @Override
-        public void onData(SocketIOClient client, SignalJoinRequest data, AckRequest ackSender) throws Exception {
-        Long clientId = client.get("userId");
-            if (clientId == null){
-                client.disconnect();
-                return;
-            }
-        Long callId =  data.callId();
-        Call call = callRepository.findById(callId)
-                .orElseThrow(() -> new ResourceNotFoundException("Call not found"));
-        User user = userRepository.findById(clientId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        try {
-            callService.validateCallAccess(call, user);
-            client.joinRoom("call-" + String.valueOf(callId));
-            client.sendEvent("signal:joined");
-        } catch(ForbiddenException e) {
-            client.sendEvent("signal:error", e.getMessage());
-            }
         }
     }
 }
