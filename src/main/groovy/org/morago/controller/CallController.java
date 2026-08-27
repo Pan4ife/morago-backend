@@ -5,12 +5,14 @@ import lombok.RequiredArgsConstructor;
 import org.morago.dto.call.CallRequest;
 import org.morago.dto.call.CallResponse;
 import org.morago.service.CallService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/calls")
@@ -20,9 +22,12 @@ public class CallController {
     private final CallService callService;
 
     @GetMapping
-    public ResponseEntity<List<CallResponse>> getAll(Authentication authentication) {
-
-        return ResponseEntity.ok(callService.getAll(authentication.getName()));
+    public ResponseEntity<Page<CallResponse>> getAll(Authentication authentication,
+                                                     @RequestParam(defaultValue = "0") int page,
+                                                     @RequestParam(defaultValue = "10") int size)
+    {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(callService.getAll(authentication.getName(), pageable));
 
     }
     @GetMapping("/{id}")
