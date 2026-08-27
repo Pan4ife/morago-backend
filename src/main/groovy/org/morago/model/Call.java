@@ -15,38 +15,37 @@ import java.time.LocalDateTime;
 @Setter
 public class Call {
 
-        @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-        @ManyToOne
-        @JoinColumn(name = "client_id")
-        private User client;
+    @ManyToOne
+    @JoinColumn(name = "client_id")
+    private User client;
 
-        @ManyToOne
-        @JoinColumn(name = "translator_id")
-        private TranslatorProfile translator;
+    @ManyToOne
+    @JoinColumn(name = "translator_id")
+    private TranslatorProfile translator;
 
-        private LocalDateTime startTime;
+    private LocalDateTime startTime;
 
-        private LocalDateTime endTime;
+    private LocalDateTime endTime;
 
-        @Column(precision = 19, scale = 2)
-        private BigDecimal cost;
+    @Column(precision = 19, scale = 2)
+    private BigDecimal cost;
 
-        private Long durationSeconds;
+    private Long durationSeconds;
 
-        @Enumerated(EnumType.STRING)
-        private CallStatus status;
+    @Enumerated(EnumType.STRING)
+    private CallStatus status;
 
-        @CreationTimestamp
-        private LocalDateTime createdAt;
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 
-        @UpdateTimestamp
-        private LocalDateTime updatedAt;
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 
-        @OneToOne(mappedBy = "call")
-        private Review review;
-
+    @OneToOne(mappedBy = "call")
+    private Review review;
 
 }

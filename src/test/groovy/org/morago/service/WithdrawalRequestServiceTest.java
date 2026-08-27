@@ -1,6 +1,6 @@
 package org.morago.service;
 
-import lombok.With;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,9 +9,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.morago.exception.ConflictException;
 import org.morago.exception.InsufficientBalanceException;
+import org.morago.model.Transaction;
 import org.morago.model.User;
 import org.morago.model.WithdrawalRequest;
 import org.morago.model.WithdrawalStatus;
+import org.morago.repository.TransactionRepository;
 import org.morago.repository.UserRepository;
 import org.morago.repository.WithdrawalRequestRepository;
 
@@ -30,6 +32,9 @@ public class WithdrawalRequestServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private TransactionRepository transactionRepository;
 
     @InjectMocks
     private WithdrawalRequestService withdrawalRequestService;
@@ -66,6 +71,9 @@ public class WithdrawalRequestServiceTest {
                 .thenReturn(Optional.of(translator));
 
         when(withdrawalRequestRepository.save(any(WithdrawalRequest.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(transactionRepository.save(any(Transaction.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         WithdrawalRequest result = withdrawalRequestService.create("translator@test.com", BigDecimal.valueOf(150));

@@ -25,6 +25,10 @@ public class CallController {
         return ResponseEntity.ok(callService.getAll(authentication.getName()));
 
     }
+    @GetMapping("/{id}")
+    public ResponseEntity<CallResponse> getById(@PathVariable Long id, Authentication authentication){
+        return ResponseEntity.ok(callService.getById(id, authentication.getName()));
+    }
 
     @PostMapping
     @PreAuthorize("hasRole('USER')")

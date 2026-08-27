@@ -25,6 +25,7 @@ public class User {
 
     private String password;
 
+    @Column(precision = 19, scale = 2)
     private BigDecimal balance = BigDecimal.ZERO;
 
     private LocalDateTime createdAt;

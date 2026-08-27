@@ -1,32 +1,18 @@
 package org.morago.dto.call;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import org.morago.model.CallStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Getter
-@AllArgsConstructor
-public class CallResponse {
-
-    private Long id;
-
-    private String clientEmail;
-
-    private String translatorEmail;
-
-    private CallStatus status;
-
-    private LocalDateTime startTime;
-
-    private LocalDateTime endTime;
-
-    private Long durationSeconds;
-
-    private BigDecimal cost;
-
-
-
+public record CallResponse (
+    Long id,
+    String clientEmail,
+    String translatorEmail,
+    CallStatus status,
+    LocalDateTime startTime,
+    LocalDateTime endTime,
+    Long durationSeconds,
+    BigDecimal cost
+) {
 }

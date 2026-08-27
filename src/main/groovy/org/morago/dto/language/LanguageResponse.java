@@ -1,13 +1,10 @@
 package org.morago.dto.language;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+public record LanguageResponse (
 
-@Getter
-@AllArgsConstructor
-public class LanguageResponse {
+    Long id,
 
-    private Long id;
+    String name
+) {
 
-    private String name;
 }
