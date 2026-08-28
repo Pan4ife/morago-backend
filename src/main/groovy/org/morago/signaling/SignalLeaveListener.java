@@ -6,6 +6,7 @@ import com.corundumstudio.socketio.SocketIOServer;
 import com.corundumstudio.socketio.listener.DataListener;
 import org.morago.dto.signaling.SignalLeaveRequest;
 import org.morago.exception.ForbiddenException;
+import org.morago.exception.ResourceNotFoundException;
 import org.morago.service.CallService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -32,13 +33,16 @@ public class SignalLeaveListener implements DataListener<SignalLeaveRequest> {
             return;
         }
         Long callId =  data.callId();
-        CallAndUser callAndUser = callAndUserForSignals.findCallAndUser(callId, clientId);
+        if (!callAndUserForSignals.isValid(data, client)) {
+            return;
+        }
         try {
+            CallAndUser callAndUser = callAndUserForSignals.findCallAndUser(callId, clientId);
             callService.validateCallAccess(callAndUser.call(), callAndUser.user());
             client.leaveRoom("call-" + String.valueOf(callId));
             socketIOServer.getRoomOperations("call-" + String.valueOf(callId))
                     .sendEvent("signal:leave", client);
-        } catch(ForbiddenException e) {
+        } catch(ForbiddenException | ResourceNotFoundException e) {
             client.sendEvent("signal:error", e.getMessage());
         }
     }

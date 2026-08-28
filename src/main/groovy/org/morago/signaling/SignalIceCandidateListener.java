@@ -6,6 +6,7 @@ import com.corundumstudio.socketio.SocketIOServer;
 import com.corundumstudio.socketio.listener.DataListener;
 import org.morago.dto.signaling.SignalIceCandidateRequest;
 import org.morago.exception.ForbiddenException;
+import org.morago.exception.ResourceNotFoundException;
 import org.morago.service.CallService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -32,13 +33,16 @@ public class SignalIceCandidateListener implements DataListener<SignalIceCandida
             return;
         }
         Long callId =  data.callId();
+        if (!callAndUserForSignals.isValid(data, client)) {
+            return;
+        }
         String iceCandidate = data.iceCandidate();
-        CallAndUser callAndUser = callAndUserForSignals.findCallAndUser(callId, clientId);
         try {
+            CallAndUser callAndUser = callAndUserForSignals.findCallAndUser(callId, clientId);
             callService.validateCallAccess(callAndUser.call(), callAndUser.user());
             socketIOServer.getRoomOperations("call-"+ String.valueOf(callId))
                     .sendEvent("signal:ice-candidate", client, iceCandidate);
-        } catch(ForbiddenException e) {
+        } catch(ForbiddenException | ResourceNotFoundException e) {
             client.sendEvent("signal:error", e.getMessage());
         }
     }
