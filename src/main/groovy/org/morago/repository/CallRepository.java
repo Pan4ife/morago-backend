@@ -5,15 +5,23 @@ import org.morago.model.Call;
 import org.morago.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+
 import java.util.Optional;
 
 public interface CallRepository extends JpaRepository<Call, Long> {
 
+    @Override
+    @EntityGraph(attributePaths = {"client", "translator.user"})
+    Page<Call> findAll(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"client", "translator.user"})
     Page<Call> findByClient(User client, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"client", "translator.user"})
     Page<Call> findByTranslator_User(User translator, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

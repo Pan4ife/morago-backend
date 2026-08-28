@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.time.LocalDateTime;
@@ -31,7 +32,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode statusCode, WebRequest request) {
         Map<String, String> validationErrors = null;
 
-        if(ex instanceof MethodArgumentNotValidException manvEx){
+        if (ex instanceof MethodArgumentNotValidException manvEx) {
             validationErrors = manvEx.getBindingResult().getFieldErrors().stream()
                     .collect(Collectors.toMap(
                             FieldError::getField,
@@ -179,7 +180,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(InvalidCallStatusTransitionException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidCallStatusTransition(InvalidCallStatusTransitionException ex, HttpServletRequest request){
+    public ResponseEntity<ErrorResponse> handleInvalidCallStatusTransition(InvalidCallStatusTransitionException ex, HttpServletRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.CONFLICT.value(),
@@ -191,5 +192,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(errorResponse);
     }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex,
+                                                                                   HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "BAD_REQUEST",
+                ex.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(errorResponse);
+    }
 }
+
 

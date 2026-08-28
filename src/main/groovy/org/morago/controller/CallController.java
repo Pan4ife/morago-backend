@@ -22,11 +22,8 @@ public class CallController {
     private final CallService callService;
 
     @GetMapping
-    public ResponseEntity<Page<CallResponse>> getAll(Authentication authentication,
-                                                     @RequestParam(defaultValue = "0") int page,
-                                                     @RequestParam(defaultValue = "10") int size)
+    public ResponseEntity<Page<CallResponse>> getAll(Authentication authentication, Pageable pageable)
     {
-        Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(callService.getAll(authentication.getName(), pageable));
 
     }
