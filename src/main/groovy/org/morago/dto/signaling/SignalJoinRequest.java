@@ -1,4 +1,4 @@
-package org.morago.dto.call;
+package org.morago.dto.signaling;
 
 
 import jakarta.validation.constraints.NotNull;
