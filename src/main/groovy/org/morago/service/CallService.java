@@ -32,6 +32,7 @@ public class CallService {
     private final CallRepository callRepository;
     private final UserRepository userRepository;
     private final TranslatorProfileRepository translatorProfileRepository;
+    private final CallNotificationService callNotificationService;
     private static final Map<CallStatus, Set<CallStatus>> ALLOWED_TRANSITIONS =
             Map.of(
             CallStatus.CREATED, Set.of(CallStatus.IN_PROGRESS, CallStatus.CANCELLED),
@@ -134,6 +135,7 @@ public class CallService {
         call.setCost(BigDecimal.ZERO);
         call.setCreatedAt(now);
         Call savedCall = callRepository.save(call);
+        callNotificationService.notifyIncomingCall(savedCall);
         log.info("Call {} created by user  {}", savedCall.getId(), email);
         return mapToResponse(savedCall);
     }
@@ -216,6 +218,7 @@ public class CallService {
         User translator = call.getTranslator().getUser();
         transactionService.payForCall(client, translator, cost, call);
         Call savedCall = callRepository.save(call);
+        callNotificationService.notifyCallFinished(savedCall);
         log.info("Call {} was finished by user {}", id, email);
         return mapToResponse(savedCall);
     }
@@ -234,6 +237,7 @@ public class CallService {
         call.setEndTime(now);
         call.setUpdatedAt(now);
         Call savedCall = callRepository.save(call);
+        callNotificationService.notifyCallCancelled(savedCall);
         log.info("Call {} was canceled by user {}", id, email);
         return mapToResponse(savedCall);
     }
@@ -251,6 +255,7 @@ public class CallService {
         call.setStartTime(now);
         call.setUpdatedAt(now);
         Call savedCall = callRepository.save(call);
+        callNotificationService.notifyCallStarted(savedCall);
         log.info("Call {} was started by user {}", id, email);
         return mapToResponse(savedCall);
     }
