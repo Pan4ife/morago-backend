@@ -90,11 +90,12 @@ public class SocketIoConfig {
 
         @Override
         public AuthorizationResult getAuthorizationResult(HandshakeData handshakeData) {
-            String token = handshakeData.getSingleUrlParam("token");
-            String username;
-            if (token == null) {
+            String header = handshakeData.getHttpHeaders().get("Authorization");
+            if (header == null ||!header.startsWith("Bearer ")){
                 return AuthorizationResult.FAILED_AUTHORIZATION;
             }
+            String token = header.substring(7);
+            String username;
 
             try {
                  username = jwtService.extractUsername(token);
