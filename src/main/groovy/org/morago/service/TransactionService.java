@@ -78,9 +78,11 @@ public class TransactionService {
             throw new ConflictException("Call has already been charged");
         }
 
-        if (client.getBalance().compareTo(amount) < 0) {
-            throw new InsufficientBalanceException("Недостаточно средств для звонка");
-        }
+        // Баланс клиента может уйти в минус — это осознанное решение:
+        // клиент проверяется на положительный баланс при старте звонка (CallService.start()),
+        // но реальная стоимость известна только по факту завершения. Если баланс не покрывает
+        // полную стоимость, клиент остаётся должником (отрицательный баланс), а переводчик
+        // получает полную оплату за отработанное время.
 
         client.setBalance(client.getBalance().subtract(amount));
         translator.setBalance(translator.getBalance().add(amount));

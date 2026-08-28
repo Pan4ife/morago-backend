@@ -5,6 +5,7 @@ import org.morago.dto.call.CallRequest;
 import org.morago.dto.call.CallResponse;
 import org.morago.exception.ForbiddenException;
 import org.morago.exception.ConflictException;
+import org.morago.exception.InsufficientBalanceException;
 import org.morago.exception.ResourceNotFoundException;
 import org.morago.model.*;
 import org.morago.repository.CallRepository;
@@ -312,15 +313,16 @@ public class CallService {
                 .orElseThrow(() -> new ResourceNotFoundException("Call not found"));
 
         User currentUser = getCurrentUser(email);
-
-
-
         validateTranslatorAccess(call, currentUser);
 
         if (call.getStatus() != CallStatus.CREATED) {
             throw new ConflictException("Call can only be started from CREATED status");
         }
 
+        User client = call.getClient();
+        if (client.getBalance().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InsufficientBalanceException("Недостаточно средств у клиента для начала звонка");
+        }
 
         LocalDateTime now = LocalDateTime.now();
 
