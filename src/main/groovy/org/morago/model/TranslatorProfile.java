@@ -64,5 +64,4 @@ public class TranslatorProfile {
             inverseJoinColumns = @JoinColumn(name = "topic_id")
     )
     private Set<Topic> topics = new HashSet<>();
-
 }
