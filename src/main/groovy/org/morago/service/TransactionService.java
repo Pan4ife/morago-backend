@@ -3,10 +3,7 @@ package org.morago.service;
 import lombok.RequiredArgsConstructor;
 
 import org.morago.dto.transaction.TransactionResponse;
-import org.morago.exception.ConflictException;
-import org.morago.exception.InsufficientBalanceException;
-import org.morago.exception.InvalidAmountException;
-import org.morago.exception.UserNotFoundException;
+import org.morago.exception.*;
 import org.morago.model.*;
 import org.morago.repository.TransactionRepository;
 import org.morago.repository.UserRepository;
@@ -26,7 +23,7 @@ public class TransactionService {
 
     private User getCurrentUser(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
     @Transactional

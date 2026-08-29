@@ -30,6 +30,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleExceptionInternal(
             Exception ex, Object body, HttpHeaders headers,
             HttpStatusCode statusCode, WebRequest request) {
+        Map<String, String> validationErrors = null;
+
+        if (ex instanceof MethodArgumentNotValidException manvEx) {
+            validationErrors = manvEx.getBindingResult().getFieldErrors().stream()
+                    .collect(Collectors.toMap(
+                            FieldError::getField,
+                            error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : "Invalid value",
+                            (existing, replacement) -> existing + "; " + replacement)
+                    );
+        }
 
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
@@ -37,7 +47,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "REQUEST_ERROR",
                 ex.getMessage(),
                 request.getDescription(false),
-                null
+                validationErrors
         );
 
         return new ResponseEntity<>(errorResponse, headers, statusCode);
@@ -160,6 +170,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 LocalDateTime.now(),
                 HttpStatus.CONFLICT.value(),
                 "INSUFFICIENT_BALANCE",
+                ex.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(errorResponse);
+    }
+
+    @ExceptionHandler(InvalidCallStatusTransitionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCallStatusTransition(InvalidCallStatusTransitionException ex, HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                "INVALID_STATUS_TRANSITION",
                 ex.getMessage(),
                 request.getRequestURI(),
                 null
