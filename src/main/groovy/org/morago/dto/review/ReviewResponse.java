@@ -1,16 +1,14 @@
 package org.morago.dto.review;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
-@Getter
-@AllArgsConstructor
-public class ReviewResponse {
+public record ReviewResponse (
 
-    private Long id;
+    Long id,
 
-    private Integer rating;
+    Integer rating,
 
-    private String comment;
+    String comment
+
+) {
 
 }
