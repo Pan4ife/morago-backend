@@ -3,8 +3,10 @@ package org.morago;
 import org.junit.jupiter.api.BeforeEach;
 import org.morago.model.Role;
 import org.morago.model.RoleName;
+import org.morago.model.TranslatorProfile;
 import org.morago.model.User;
 import org.morago.repository.RoleRepository;
+import org.morago.repository.TranslatorProfileRepository;
 import org.morago.repository.UserRepository;
 import org.springframework.http.MediaType;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,8 @@ class SecurityIntegrationTests {
     private RoleRepository roleRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private TranslatorProfileRepository translatorProfileRepository;
     @Autowired
     private MockMvc mockMvc;
 
@@ -148,6 +152,7 @@ class SecurityIntegrationTests {
                                "\"hourlyRate\":  500 }"))
                 .andReturn();
         Long translatorProfileId = extractId(userRequestTranslatorProfile);
+        markTranslatorOnline(translatorProfileId);
 
         String clientAccessToken = obtainAccessToken("client@morago.com", "password123");
 
@@ -166,6 +171,11 @@ class SecurityIntegrationTests {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden()).andReturn();
 
+    }
+    private void markTranslatorOnline(Long translatorProfileId) {
+        TranslatorProfile profile = translatorProfileRepository.findById(translatorProfileId).orElseThrow();
+        profile.setOnline(true);
+        translatorProfileRepository.save(profile);
     }
 
     private String obtainAccessToken(String email, String password) throws Exception {
