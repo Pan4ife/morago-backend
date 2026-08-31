@@ -2,6 +2,8 @@ package org.morago.service;
 
 import org.morago.exception.ConflictException;
 import org.morago.exception.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.morago.model.*;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -25,13 +28,11 @@ import java.util.Set;
 public class AuthService {
 
     private final UserRepository userRepository;
-
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-
     private final RoleRepository roleRepository;
-
     private final RefreshTokenRepository refreshTokenRepository;
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     public void register(RegisterRequest request) {
 
@@ -47,6 +48,8 @@ public class AuthService {
 
         user.setPassword(passwordEncoder.encode(request.password()));
 
+        user.setBalance(BigDecimal.ZERO);
+
         Role userRole = roleRepository.findByName(RoleName.USER)
                 .orElseThrow(
                         () -> new ResourceNotFoundException("Role USER not found")
@@ -60,6 +63,7 @@ public class AuthService {
     @Transactional
     public JwtResponse login(LoginRequest request) {
 
+
         String normalizedEmail = request.email().trim().toLowerCase();
 
         User user = userRepository.findByEmail(normalizedEmail)
@@ -69,8 +73,9 @@ public class AuthService {
                 request.password(),
                 user.getPassword()
         )) {
-
+            log.warn("Login failed for email: {}" , normalizedEmail);
             throw new BadCredentialsException("Wrong password");
+
         }
         if (user.getStatus() == UserStatus.BLOCKED) {
 

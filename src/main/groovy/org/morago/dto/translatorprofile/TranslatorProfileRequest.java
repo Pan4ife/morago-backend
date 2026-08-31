@@ -1,21 +1,23 @@
 package org.morago.dto.translatorprofile;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 
+import java.math.BigDecimal;
 import java.util.Set;
 
-@Getter
-@Setter
-public class TranslatorProfileRequest {
+public record TranslatorProfileRequest (
 
-    private String bio;
+    String bio,
 
-    private Set<Long> languageIds;
+    Set<Long> languageIds,
 
-    private Set<Long> topicIds;
+    Set<Long> topicIds,
 
     @NotNull
-    private Double hourlyRate;
-}
+    @DecimalMin(value = "0.01", message = "Hourly rate must be positive")
+    BigDecimal hourlyRate
+
+) {}
+

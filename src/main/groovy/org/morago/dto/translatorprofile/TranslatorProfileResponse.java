@@ -1,20 +1,21 @@
 package org.morago.dto.translatorprofile;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import java.math.BigDecimal;
 
-@Getter
-@AllArgsConstructor
-public class TranslatorProfileResponse {
 
-    private Long id;
+public record TranslatorProfileResponse (
 
-    private String email;
 
-    private String bio;
+    Long id,
 
-    private Double rating;
+    String email,
 
-    private boolean online;
+    String bio,
 
-}
+    Double rating,
+
+    boolean online,
+
+    BigDecimal hourlyRate
+
+) {}
