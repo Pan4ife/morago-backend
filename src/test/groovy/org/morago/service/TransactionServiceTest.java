@@ -109,7 +109,7 @@ public class TransactionServiceTest {
     }
 
     @Test
-    void payForCall_shouldThrow_whenClientHasInsufficientBalance() {
+    void payForCall_shouldAllowNegativeBalance_whenClientRunsOutOfFundsDuringCall() {
 
         User client = new User();
         client.setId(1L);
@@ -125,14 +125,13 @@ public class TransactionServiceTest {
         when(transactionRepository.existsByCallIdAndType(10L, TransactionType.CALL_CHARGE))
                 .thenReturn(false);
 
-        assertThrows(InsufficientBalanceException.class, () ->
-                transactionService.payForCall(client, translator, BigDecimal.valueOf(500), call)
-        );
+        // клиент был проверен на положительный баланс при start(),
+        // но реальная стоимость (500) превышает баланс (100) — уходит в долг
+        transactionService.payForCall(client, translator, BigDecimal.valueOf(500), call);
 
-        // баланс не должен был измениться
-        assertEquals(BigDecimal.valueOf(100), client.getBalance());
-        assertEquals(BigDecimal.ZERO, translator.getBalance());
+        assertEquals(BigDecimal.valueOf(-400), client.getBalance()); // клиент в долгу
+        assertEquals(BigDecimal.valueOf(500), translator.getBalance()); // переводчик получил полную оплату
 
-        verify(userRepository, never()).save(any(User.class));
+        verify(transactionRepository, times(2)).save(any(Transaction.class));
     }
 }

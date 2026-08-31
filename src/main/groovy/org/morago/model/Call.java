@@ -47,4 +47,5 @@ public class Call {
 
     @OneToOne(mappedBy = "call")
     private Review review;
+
 }

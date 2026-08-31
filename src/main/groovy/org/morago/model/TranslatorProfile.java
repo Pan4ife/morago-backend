@@ -26,11 +26,11 @@ public class TranslatorProfile {
 
     private boolean online = false;
 
-    @Enumerated(EnumType.STRING)
-    private VerificationStatus status = VerificationStatus.PENDING;
-
     @Column(name = "hourly_rate", precision = 19, scale = 2)
     private BigDecimal hourlyRate;
+
+    @Enumerated(EnumType.STRING)
+    private VerificationStatus status = VerificationStatus.PENDING;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
