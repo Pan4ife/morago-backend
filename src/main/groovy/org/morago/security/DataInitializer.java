@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.Set;
 
 @Component
@@ -27,6 +28,9 @@ public class DataInitializer implements CommandLineRunner {
         if (roleRepository.count() > 0) {
             return;
         }
+        Role adminRole = new Role();
+        adminRole.setName(RoleName.ADMIN);
+        roleRepository.save(adminRole);
 
         Role userRole = new Role();
         userRole.setName(RoleName.USER);
@@ -36,17 +40,25 @@ public class DataInitializer implements CommandLineRunner {
         translatorRole.setName(RoleName.TRANSLATOR);
         roleRepository.save(translatorRole);
 
-        User user = new User();
-        user.setEmail("user@morago.com");
-        user.setPassword(passwordEncoder.encode("user123"));
-        user.setRoles(Set.of(userRole));
-        userRepository.save(user);
+        User tripleRoleUser = new User();
+        tripleRoleUser.setEmail("admin@morago.com");
+        tripleRoleUser.setPassword(passwordEncoder.encode("admin123"));
+        tripleRoleUser.setRoles(Set.of(userRole, adminRole, translatorRole));
+        tripleRoleUser.setBalance(BigDecimal.ZERO);
+        userRepository.save(tripleRoleUser);
 
+        User doubleRoleUser = new User();
+        doubleRoleUser.setEmail("user@morago.com");
+        doubleRoleUser.setPassword(passwordEncoder.encode("user123"));
+        doubleRoleUser.setRoles(Set.of(userRole, adminRole));
+        doubleRoleUser.setBalance(BigDecimal.ZERO);
+        userRepository.save(doubleRoleUser);
 
-        User translator = new User();
-        translator.setEmail("translator@morago.com");
-        translator.setPassword(passwordEncoder.encode("trans123"));
-        translator.setRoles(Set.of(translatorRole));
-        userRepository.save(translator);
+        User singleRoleUser = new User();
+        singleRoleUser.setEmail("translator@morago.com");
+        singleRoleUser.setPassword(passwordEncoder.encode("translator123"));
+        singleRoleUser.setRoles(Set.of(translatorRole));
+        singleRoleUser.setBalance(BigDecimal.ZERO);
+        userRepository.save(singleRoleUser);
     }
 }

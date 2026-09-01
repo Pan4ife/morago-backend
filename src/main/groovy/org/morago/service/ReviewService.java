@@ -72,7 +72,7 @@ public class ReviewService {
     @Transactional
     public ReviewResponse create(String email, ReviewRequest request) {
 
-        Call call = callRepository.findById(request.getCallId())
+        Call call = callRepository.findById(request.callId())
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Call not found"));
 
@@ -94,9 +94,9 @@ public class ReviewService {
 
         review.setCall(call);
 
-        review.setRating(request.getRating());
+        review.setRating(request.rating());
 
-        review.setComment(request.getComment());
+        review.setComment(request.comment());
 
         Review savedReview = reviewRepository.save(review);
 

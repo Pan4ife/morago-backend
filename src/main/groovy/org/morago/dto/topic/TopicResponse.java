@@ -1,14 +1,11 @@
 package org.morago.dto.topic;
 
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
-@Getter
-@AllArgsConstructor
-public class TopicResponse {
+public record TopicResponse (
 
-    private Long id;
+    Long id,
 
-    private String name;
-}
+    String name
+
+) {}
