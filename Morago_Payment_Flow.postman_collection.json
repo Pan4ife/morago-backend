@@ -1,0 +1,555 @@
+{
+  "info": {
+    "name": "Morago — Payment & Calls Flow",
+    "description": "Коллекция для проверки платёжного модуля и жизненного цикла звонков: логин под тремя ролями (Client, Interpreter, Admin), пополнение баланса, звонок create/start/finish, история транзакций, заявки на вывод средств.\n\n## Как запускать\n1. Импортируй файл окружения `Morago_Local.postman_environment.json` и выбери его в правом верхнем углу Postman.\n2. Прогоняй запросы по порядку сверху вниз внутри каждой папки — они сохраняют нужные значения (токены, id) автоматически в переменные окружения.\n3. Папка `Auth` должна быть выполнена первой — без токенов остальные запросы вернут 401/403.\n4. Папка `Withdrawal` в шагах Admin требует токен админа — убедись, что в БД у тестового пользователя реально стоит роль ADMIN.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Client",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{clientEmail}}\",\n  \"password\": \"{{clientPassword}}\"\n}"
+            },
+            "description": "Ожидаемый код: 200. Если email уже занят — 409 Conflict, это нормально при повторном прогоне."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 or 409 (already registered)', function () {",
+                  "    pm.expect([200, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Client",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{clientEmail}}\",\n  \"password\": \"{{clientPassword}}\"\n}"
+            },
+            "description": "Ожидаемый код: 200. Сохраняет accessToken в переменную clientToken."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('clientToken', json.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Interpreter",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{translatorEmail}}\",\n  \"password\": \"{{translatorPassword}}\"\n}"
+            },
+            "description": "Ожидаемый код: 200 (или 409, если уже зарегистрирован). Роль по умолчанию — USER; для полноценного тестирования переводчику нужно создать TranslatorProfile (см. папку Calls) и вручную выставить роль TRANSLATOR в БД, если авто-назначения роли ещё нет."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 or 409 (already registered)', function () {",
+                  "    pm.expect([200, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Interpreter",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{translatorEmail}}\",\n  \"password\": \"{{translatorPassword}}\"\n}"
+            },
+            "description": "Ожидаемый код: 200. Сохраняет accessToken в переменную translatorToken."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('translatorToken', json.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "description": "Ожидаемый код: 200. Пользователь должен уже существовать в БД с ролью ADMIN (роль обычно назначается вручную, регистрация не создаёт админов). Сохраняет accessToken в переменную adminToken."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('adminToken', json.accessToken);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Translator Profile",
+      "item": [
+        {
+          "name": "Create Translator Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{translatorToken}}" }
+            ],
+            "url": "{{baseUrl}}/translator-profile",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"Experienced Korean-English interpreter\",\n  \"languageIds\": [1],\n  \"topicIds\": [1],\n  \"hourlyRate\": 600\n}"
+            },
+            "description": "Ожидаемый код: 200. Сохраняет translatorId (id профиля) в переменную окружения для дальнейшего создания звонка."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('translatorId', json.id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Top-up Client Balance",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{clientToken}}" }
+            ],
+            "url": "{{baseUrl}}/transactions/top-up",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 5000\n}"
+            },
+            "description": "Ожидаемый код: 200. Баланс клиента увеличивается на 5000."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Type is TOP_UP', function () {",
+                  "    pm.expect(pm.response.json().type).to.eql('TOP_UP');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Top-up Negative Amount (should fail)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{clientToken}}" }
+            ],
+            "url": "{{baseUrl}}/transactions/top-up",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": -100\n}"
+            },
+            "description": "Ожидаемый код: 400 Bad Request — валидация должна отклонить отрицательную сумму."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get My Transactions (Client)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clientToken}}" }],
+            "url": "{{baseUrl}}/transactions/me",
+            "description": "Ожидаемый код: 200. Возвращает историю операций клиента, отсортированную по дате (новые сверху)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is an array', function () {",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Calls",
+      "item": [
+        {
+          "name": "Create Call (Client)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{clientToken}}" }
+            ],
+            "url": "{{baseUrl}}/calls",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"translatorId\": {{translatorId}}\n}"
+            },
+            "description": "Ожидаемый код: 200. Звонок создаётся в статусе CREATED. Сохраняет callId в переменную окружения."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('callId', json.id);",
+                  "pm.test('Status is CREATED', function () {",
+                  "    pm.expect(json.status).to.eql('CREATED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Start Call (Interpreter)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{translatorToken}}" }],
+            "url": "{{baseUrl}}/calls/{{callId}}/start",
+            "description": "Ожидаемый код: 200. Переводит звонок в IN_PROGRESS, фиксирует startTime."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Status is IN_PROGRESS', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('IN_PROGRESS');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Finish Call (Interpreter)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{translatorToken}}" }],
+            "url": "{{baseUrl}}/calls/{{callId}}/finish",
+            "description": "Ожидаемый код: 200. Считает cost и durationSeconds по фактическому времени, списывает клиента, начисляет переводчику."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Status is FINISHED', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('FINISHED');",
+                  "});",
+                  "pm.test('Cost is present', function () {",
+                  "    pm.expect(pm.response.json().cost).to.not.be.null;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Finish Call Again (should fail — no double charge)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{translatorToken}}" }],
+            "url": "{{baseUrl}}/calls/{{callId}}/finish",
+            "description": "Ожидаемый код: 409 Conflict. Проверка защиты от повторного списания — звонок уже FINISHED."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Withdrawal",
+      "item": [
+        {
+          "name": "Create Withdrawal Request (Interpreter)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{translatorToken}}" }
+            ],
+            "url": "{{baseUrl}}/withdrawal-requests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50\n}"
+            },
+            "description": "Ожидаемый код: 200. Сумма резервируется (списывается с баланса переводчика сразу), статус PENDING. Сохраняет withdrawalId."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('withdrawalId', json.id);",
+                  "pm.test('Status is PENDING', function () {",
+                  "    pm.expect(json.status).to.eql('PENDING');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Withdrawal — Amount Exceeds Balance (should fail)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{translatorToken}}" }
+            ],
+            "url": "{{baseUrl}}/withdrawal-requests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 999999999\n}"
+            },
+            "description": "Ожидаемый код: 400 Bad Request — недостаточно средств."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get My Withdrawal Requests (Interpreter)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{translatorToken}}" }],
+            "url": "{{baseUrl}}/withdrawal-requests/my",
+            "description": "Ожидаемый код: 200. История заявок переводчика."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Pending Requests as Non-Admin (should be forbidden)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{translatorToken}}" }],
+            "url": "{{baseUrl}}/withdrawal-requests/admin/pending",
+            "description": "Ожидаемый код: 403 Forbidden — доступ только для ADMIN."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 403', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Pending Requests (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": "{{baseUrl}}/withdrawal-requests/admin/pending",
+            "description": "Ожидаемый код: 200. Список всех заявок в статусе PENDING."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve Withdrawal Request (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": "{{baseUrl}}/withdrawal-requests/admin/{{withdrawalId}}/approve",
+            "description": "Ожидаемый код: 200. Статус меняется на APPROVED, processedAt заполняется."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Status is APPROVED', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('APPROVED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve Again (should fail — already processed)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": "{{baseUrl}}/withdrawal-requests/admin/{{withdrawalId}}/approve",
+            "description": "Ожидаемый код: 409 Conflict — заявка уже не в статусе PENDING."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
