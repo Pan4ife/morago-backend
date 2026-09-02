@@ -1,5 +1,6 @@
 package org.morago.dto.translatorprofile;
 
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 
@@ -19,3 +20,4 @@ public record TranslatorProfileRequest (
     BigDecimal hourlyRate
 
 ) {}
+
