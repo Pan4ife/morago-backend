@@ -83,7 +83,7 @@ public class CallService {
         }
     }
 
-    private void validateCallAccess(Call call, User user) {
+    public void validateCallAccess(Call call, User user) {
         if (!isAdmin(user) && !call.getClient().getId().equals(user.getId()) &&
                 !call.getTranslator().getUser().getId().equals(user.getId())) {
             throw new ForbiddenException("Access denied");
