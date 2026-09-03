@@ -182,15 +182,23 @@ public class CallService {
      */
     @Transactional
     public CallResponse finish(Long id, String email) {
-
         Call call = callRepository.findByIdForUpdate(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Call not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found"));
 
         User currentUser = getCurrentUser(email);
         validateTranslatorAccess(call, currentUser);
         validateCallStatusTransition(call.getStatus(), CallStatus.FINISHED);
+
+        Call savedCall = finishInternal(call);
+        callNotificationService.notifyCallFinished(savedCall);
+        log.info("Call {} was finished by user {}", id, email);
+        return mapToResponse(savedCall);
+    }
+
+    private Call finishInternal(Call call) {
+
         LocalDateTime now = LocalDateTime.now();
+
         long seconds = Duration.between(call.getStartTime(), now).toSeconds();
 
         if (seconds < 0) {
@@ -198,27 +206,36 @@ public class CallService {
         }
 
         BigDecimal durationInMinutes = BigDecimal.valueOf(seconds)
-                        .divide(BigDecimal.valueOf(60), 6, RoundingMode.HALF_UP);
+                .divide(BigDecimal.valueOf(60), 6, RoundingMode.HALF_UP);
 
-        BigDecimal costPerMinutes = call.getTranslator().getHourlyRate()
-                        .divide(BigDecimal.valueOf(60), 6, RoundingMode.HALF_UP);
+        BigDecimal costPerMinute = call.getTranslator().getHourlyRate()
+                .divide(BigDecimal.valueOf(60), 6, RoundingMode.HALF_UP);
 
         BigDecimal cost = durationInMinutes
-                .multiply(costPerMinutes)
-                        .setScale(2, RoundingMode.HALF_UP);
+                .multiply(costPerMinute)
+                .setScale(2, RoundingMode.HALF_UP);
 
         call.setStatus(CallStatus.FINISHED);
         call.setEndTime(now);
         call.setUpdatedAt(now);
         call.setDurationSeconds(seconds);
         call.setCost(cost);
+
         User client = call.getClient();
         User translator = call.getTranslator().getUser();
+
         transactionService.payForCall(client, translator, cost, call);
-        Call savedCall = callRepository.save(call);
+
+        return callRepository.save(call);
+    }
+
+    @Transactional
+    public void finishByTimeout(Long id) {
+        Call call = callRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found"));
+        validateCallStatusTransition(call.getStatus(), CallStatus.FINISHED);
+        Call savedCall = finishInternal(call);
         callNotificationService.notifyCallFinished(savedCall);
-        log.info("Call {} was finished by user {}", id, email);
-        return mapToResponse(savedCall);
     }
 
     public CallResponse cancel(Long id, String email) {
