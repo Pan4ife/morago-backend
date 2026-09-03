@@ -6,9 +6,11 @@ import org.morago.dto.translatorprofile.TranslatorProfileResponse;
 import org.morago.exception.InvalidAmountException;
 import org.morago.exception.ResourceNotFoundException;
 import org.morago.model.Language;
+import org.morago.model.Topic;
 import org.morago.model.TranslatorProfile;
 import org.morago.model.User;
 import org.morago.repository.LanguageRepository;
+import org.morago.repository.TopicRepository;
 import org.morago.repository.TranslatorProfileRepository;
 import org.morago.repository.UserRepository;
 import org.springframework.security.core.Authentication;
@@ -29,6 +31,8 @@ public class TranslatorProfileService {
     private final UserRepository userRepository;
 
     private final LanguageRepository languageRepository;
+
+    private final TopicRepository topicRepository;
 
     public TranslatorProfileResponse create(String email, TranslatorProfileRequest request) {
 
@@ -52,10 +56,12 @@ public class TranslatorProfileService {
         );
 
         profile.setLanguages(languages);
-
         profile.setCreatedAt(LocalDateTime.now());
         profile.setUpdatedAt(LocalDateTime.now());
         profile.setHourlyRate(request.hourlyRate());
+        Set<Topic> topics = new HashSet<>( topicRepository.findAllById(request.topicIds()));
+        profile.setTopics(topics);
+
 
         TranslatorProfile savedProfile = translatorProfileRepository.save(profile);
 

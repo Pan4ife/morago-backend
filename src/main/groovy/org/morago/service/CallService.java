@@ -3,10 +3,7 @@ package org.morago.service;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.call.CallRequest;
 import org.morago.dto.call.CallResponse;
-import org.morago.exception.ConflictException;
-import org.morago.exception.ForbiddenException;
-import org.morago.exception.InvalidCallStatusTransitionException;
-import org.morago.exception.ResourceNotFoundException;
+import org.morago.exception.*;
 import org.morago.model.*;
 import org.morago.repository.CallRepository;
 import org.morago.repository.TranslatorProfileRepository;
@@ -33,16 +30,17 @@ public class CallService {
     private final UserRepository userRepository;
     private final TranslatorProfileRepository translatorProfileRepository;
     private final CallNotificationService callNotificationService;
-    private static final Map<CallStatus, Set<CallStatus>> ALLOWED_TRANSITIONS =
-            Map.of(
-            CallStatus.CREATED, Set.of(CallStatus.IN_PROGRESS, CallStatus.CANCELLED),
-            CallStatus.IN_PROGRESS, Set.of(CallStatus.FINISHED),
-            CallStatus.FINISHED, Set.of(),
-            CallStatus.CANCELLED, Set.of()
-    );
     private final TransactionService transactionService;
 
     private static final Logger log = LoggerFactory.getLogger(CallService.class);
+
+    private static final Map<CallStatus, Set<CallStatus>> ALLOWED_TRANSITIONS =
+            Map.of(
+                    CallStatus.CREATED, Set.of(CallStatus.IN_PROGRESS, CallStatus.CANCELLED),
+                    CallStatus.IN_PROGRESS, Set.of(CallStatus.FINISHED),
+                    CallStatus.FINISHED, Set.of(),
+                    CallStatus.CANCELLED, Set.of()
+            );
 
     private boolean isAdmin(User user) {
         return user.getRoles()
@@ -250,6 +248,12 @@ public class CallService {
         User currentUser = getCurrentUser(email);
         validateTranslatorAccess(call, currentUser);
         validateCallStatusTransition(call.getStatus(), CallStatus.IN_PROGRESS);
+
+        User client = call.getClient();
+        if (client.getBalance().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InsufficientBalanceException("Недостаточно средств у клиента для начала звонка");
+        }
+
         LocalDateTime now = LocalDateTime.now();
         call.setStatus(CallStatus.IN_PROGRESS);
         call.setStartTime(now);
