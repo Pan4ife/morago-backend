@@ -2,7 +2,9 @@ package org.morago.dto.translatorprofile;
 
 import java.math.BigDecimal;
 
+
 public record TranslatorProfileResponse (
+
 
     Long id,
 
