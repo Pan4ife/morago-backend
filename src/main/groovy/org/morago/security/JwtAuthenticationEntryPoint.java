@@ -14,6 +14,13 @@ import java.time.LocalDateTime;
 
 @Component
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
+
+    private final ObjectMapper objectMapper;
+
+    public JwtAuthenticationEntryPoint(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
     @Override
     public void commence(HttpServletRequest request,
                          HttpServletResponse response,
@@ -31,6 +38,6 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
-        response.getWriter().write(new ObjectMapper().writeValueAsString(errorResponse));
+        response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }
 }

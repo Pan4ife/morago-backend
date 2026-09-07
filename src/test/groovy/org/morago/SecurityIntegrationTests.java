@@ -172,6 +172,101 @@ class SecurityIntegrationTests {
                 .andExpect(status().isForbidden()).andReturn();
 
     }
+
+    @Test
+    void checkingForAllowingCallStatusFromCreatedToInProgress() throws Exception {
+        String adminToken = obtainAccessTokenWithRole("call-admin@morago.com", "password123", RoleName.ADMIN);
+
+        MvcResult languageResult = mockMvc.perform(post("/languages")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\": \"French\"}"))
+                .andReturn();
+        Long languageId = extractId(languageResult);
+
+        MvcResult topic = mockMvc.perform(post("/topics")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\": \"Topic 4\"}"))
+                .andReturn();
+        Long topicId = extractId(topic);
+
+        String translatorAccessToken = obtainAccessTokenWithRole("translator@morago.com", "password123",
+                RoleName.TRANSLATOR);
+
+        MvcResult translatorRequestTranslatorProfile = mockMvc.perform(post("/translator-profile")
+                        .header("Authorization", "Bearer " + translatorAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"bio\": \"Bla Bla Bla\", " +
+                                "\"languageIds\": ["+ languageId +"], " +
+                                "\"topicIds\": ["+ topicId + "], " +
+                                "\"hourlyRate\":  500 }"))
+                .andReturn();
+        Long translatorProfileId = extractId(translatorRequestTranslatorProfile);
+        markTranslatorOnline(translatorProfileId);
+
+        String clientAccessToken = obtainAccessToken("client@morago.com", "password123");
+
+        MvcResult clientCall = mockMvc.perform(post("/calls")
+                        .header("Authorization", "Bearer " + clientAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"translatorId\": "+ translatorProfileId +"}"))
+                .andReturn();
+        Long clientCallId = extractId(clientCall);
+
+        MvcResult translatorCalls = mockMvc.perform(patch("/calls/"+ clientCallId +"/start")
+                        .header("Authorization", "Bearer " + translatorAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+    }
+
+    @Test
+    void checkingCallStatusTransitionsFromCreatedToCanceled() throws Exception{
+        String adminToken = obtainAccessTokenWithRole("call-admin@morago.com", "password123", RoleName.ADMIN);
+
+        MvcResult languageResult = mockMvc.perform(post("/languages")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\": \"French\"}"))
+                .andReturn();
+        Long languageId = extractId(languageResult);
+
+        MvcResult topic = mockMvc.perform(post("/topics")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\": \"Topic 4\"}"))
+                .andReturn();
+        Long topicId = extractId(topic);
+
+        String translatorAccessToken = obtainAccessTokenWithRole("translator@morago.com", "password123",
+                RoleName.TRANSLATOR);
+
+        MvcResult translatorRequestTranslatorProfile = mockMvc.perform(post("/translator-profile")
+                        .header("Authorization", "Bearer " + translatorAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"bio\": \"Bla Bla Bla\", " +
+                                "\"languageIds\": ["+ languageId +"], " +
+                                "\"topicIds\": ["+ topicId + "], " +
+                                "\"hourlyRate\":  500 }"))
+                .andReturn();
+        Long translatorProfileId = extractId(translatorRequestTranslatorProfile);
+        markTranslatorOnline(translatorProfileId);
+
+        String clientAccessToken = obtainAccessToken("client@morago.com", "password123");
+
+        MvcResult clientCall = mockMvc.perform(post("/calls")
+                        .header("Authorization", "Bearer " + clientAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"translatorId\": "+ translatorProfileId +"}"))
+                .andReturn();
+        Long clientCallId = extractId(clientCall);
+
+        MvcResult clientCancelingCall = mockMvc.perform(patch("/calls/"+ clientCallId +"/cancel")
+                        .header("Authorization", "Bearer " + clientAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+    }
+
     private void markTranslatorOnline(Long translatorProfileId) {
         TranslatorProfile profile = translatorProfileRepository.findById(translatorProfileId).orElseThrow();
         profile.setOnline(true);
