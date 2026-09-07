@@ -111,7 +111,7 @@ public class CallService {
                 call.getCost()
         );
     }
-
+    @Transactional
     public CallResponse create(String email, CallRequest request) {
         User user = getCurrentUser(email);
 
@@ -259,6 +259,7 @@ public class CallService {
         return callRepository.save(call);
     }
 
+    @Transactional
     public CallResponse cancel(Long id, String email) {
 
         Call call = callRepository.findById(id)
@@ -278,7 +279,7 @@ public class CallService {
         log.info("Call {} was canceled by user {}", id, email);
         return mapToResponse(savedCall);
     }
-
+    @Transactional
     public CallResponse start(Long id, String email) {
 
         Call call = callRepository.findById(id)

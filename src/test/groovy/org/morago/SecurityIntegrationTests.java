@@ -18,6 +18,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -31,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
+@Transactional
 
 class SecurityIntegrationTests {
     @Container
@@ -206,6 +208,12 @@ class SecurityIntegrationTests {
         markTranslatorOnline(translatorProfileId);
 
         String clientAccessToken = obtainAccessToken("client@morago.com", "password123");
+
+        mockMvc.perform(post("/transactions/top-up")
+                        .header("Authorization", "Bearer " + clientAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"amount\": 1000}"))
+                .andReturn();
 
         MvcResult clientCall = mockMvc.perform(post("/calls")
                         .header("Authorization", "Bearer " + clientAccessToken)

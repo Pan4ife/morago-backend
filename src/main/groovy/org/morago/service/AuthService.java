@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Service
@@ -55,7 +56,7 @@ public class AuthService {
                         () -> new ResourceNotFoundException("Role USER not found")
                 );
 
-        user.setRoles(Set.of(userRole));
+        user.setRoles(new HashSet<>(Set.of(userRole)));
 
         userRepository.save(user);
     }
