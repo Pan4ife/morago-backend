@@ -112,6 +112,7 @@ public class CallService {
         );
     }
 
+    @Transactional
     public CallResponse create(
             String email,
             CallRequest request
@@ -238,6 +239,7 @@ public class CallService {
         callNotificationService.notifyCallFinished(savedCall);
     }
 
+    @Transactional
     public CallResponse cancel(Long id, String email) {
 
         Call call = callRepository.findById(id)
@@ -257,6 +259,7 @@ public class CallService {
         return mapToResponse(savedCall);
     }
 
+    @Transactional
     public CallResponse start(Long id, String email) {
 
         Call call = callRepository.findById(id)
