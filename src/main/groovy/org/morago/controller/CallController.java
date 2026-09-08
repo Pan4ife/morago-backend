@@ -33,11 +33,8 @@ public class CallController {
             @ApiResponse(responseCode = "200", description = "Список звонков успешно возвращён")
     })
     @GetMapping
-    public ResponseEntity<Page<CallResponse>> getAll(Authentication authentication,
-                                                     @RequestParam(defaultValue = "0") int page,
-                                                     @RequestParam(defaultValue = "10") int size)
+    public ResponseEntity<Page<CallResponse>> getAll(Authentication authentication, Pageable pageable)
     {
-        Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(callService.getAll(authentication.getName(), pageable));
 
     }

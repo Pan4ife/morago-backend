@@ -39,7 +39,7 @@ public class TransactionController {
     public ResponseEntity<TransactionResponse> topUp(
             Authentication authentication,
             @Valid @RequestBody TopUpRequest request
-            ) {
+    ) {
         Transaction transaction = transactionService.topUp(
                 authentication.getName(),
                 request.amount()
@@ -55,12 +55,11 @@ public class TransactionController {
     @GetMapping("/me")
     public ResponseEntity<Page<TransactionResponse>> getMyTransactions(
             Authentication authentication,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
+            Pageable pageable
+    ) {
         Page<TransactionResponse> responses = transactionService
                 .getMyTransactions(authentication.getName(), pageable)
-                                .map(transactionService::toResponse);
+                .map(transactionService::toResponse);
 
         return ResponseEntity.ok(responses);
     }

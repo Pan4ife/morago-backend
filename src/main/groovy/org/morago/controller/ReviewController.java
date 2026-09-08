@@ -31,11 +31,7 @@ public class ReviewController {
             @ApiResponse(responseCode = "200", description = "Список отзывов успешно возвращён")
     })
     @GetMapping
-    public ResponseEntity<Page<ReviewResponse>> getAll(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        Pageable pageable = PageRequest.of(page, size);
+    public ResponseEntity<Page<ReviewResponse>> getAll(Pageable pageable) {
         return ResponseEntity.ok(reviewService.getAll(pageable));
     }
 

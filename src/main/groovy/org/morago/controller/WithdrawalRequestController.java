@@ -61,10 +61,8 @@ public class WithdrawalRequestController {
     @PreAuthorize("hasRole('TRANSLATOR')")
     public ResponseEntity<Page<WithdrawalRequestResponse>> getMyRequests(
             Authentication authentication,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            Pageable pageable
     ) {
-        Pageable pageable = PageRequest.of(page, size);
         Page<WithdrawalRequestResponse> responses = withdrawalRequestService
                 .getMyRequests(authentication.getName(), pageable)
                 .map(withdrawalRequestService::toResponse);
@@ -80,9 +78,8 @@ public class WithdrawalRequestController {
     @GetMapping("/admin/pending")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<WithdrawalRequestResponse>> getPendingRequests(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
+            Pageable pageable
+    ) {
         Page<WithdrawalRequestResponse> responses = withdrawalRequestService
                 .getPendingRequests(pageable)
                 .map(withdrawalRequestService::toResponse);
