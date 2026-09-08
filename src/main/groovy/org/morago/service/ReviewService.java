@@ -11,6 +11,8 @@ import org.morago.repository.CallRepository;
 import org.morago.repository.ReviewRepository;
 import org.morago.repository.TranslatorProfileRepository;
 import org.morago.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,19 +56,16 @@ public class ReviewService {
     }
 
 
+    public Page<ReviewResponse> getAll(Pageable pageable) {
 
-    public List<ReviewResponse> getAll() {
-
-        return reviewRepository.findAll()
-                .stream()
+        return reviewRepository.findAll(pageable)
                 .map(review ->
                         new ReviewResponse(
                                 review.getId(),
                                 review.getRating(),
                                 review.getComment()
                         )
-                )
-                .toList();
+                );
     }
 
     @Transactional
@@ -99,7 +98,6 @@ public class ReviewService {
         review.setComment(request.comment());
 
         Review savedReview = reviewRepository.save(review);
-
 
 
         Double avg = reviewRepository.findAverageRatingByTranslatorId(call.getTranslator().getId());

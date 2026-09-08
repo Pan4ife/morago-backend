@@ -5,6 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.morago.dto.withdrawal.WithdrawalCreateRequest;
 import org.morago.dto.withdrawal.WithdrawalRequestResponse;
 import org.morago.service.WithdrawalRequestService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -24,7 +27,7 @@ public class WithdrawalRequestController {
     public ResponseEntity<WithdrawalRequestResponse> create(
             Authentication authentication,
             @Valid @RequestBody WithdrawalCreateRequest request
-            ) {
+    ) {
         return ResponseEntity.ok(
                 withdrawalRequestService.toResponse(
                         withdrawalRequestService.create(
@@ -37,26 +40,24 @@ public class WithdrawalRequestController {
 
     @GetMapping("/my")
     @PreAuthorize("hasRole('TRANSLATOR')")
-    public ResponseEntity<List<WithdrawalRequestResponse>> getMyRequests(
-            Authentication authentication
+    public ResponseEntity<Page<WithdrawalRequestResponse>> getMyRequests(
+            Authentication authentication,
+            Pageable pageable
     ) {
-        List<WithdrawalRequestResponse> responses = withdrawalRequestService
-                .getMyRequests(authentication.getName())
-                .stream()
-                .map(withdrawalRequestService::toResponse)
-                .toList();
-
+        Page<WithdrawalRequestResponse> responses = withdrawalRequestService
+                .getMyRequests(authentication.getName(), pageable)
+                .map(withdrawalRequestService::toResponse);
         return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/admin/pending")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<WithdrawalRequestResponse>> getPendingRequests() {
-        List<WithdrawalRequestResponse> responses = withdrawalRequestService
-                .getPendingRequests()
-                .stream()
-                .map(withdrawalRequestService::toResponse)
-                .toList();
+    public ResponseEntity<Page<WithdrawalRequestResponse>> getPendingRequests(
+            Pageable pageable
+    ) {
+        Page<WithdrawalRequestResponse> responses = withdrawalRequestService
+                .getPendingRequests(pageable)
+                .map(withdrawalRequestService::toResponse);
 
         return ResponseEntity.ok(responses);
     }

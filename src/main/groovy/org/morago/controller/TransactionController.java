@@ -6,12 +6,14 @@ import org.morago.dto.transaction.TopUpRequest;
 import org.morago.dto.transaction.TransactionResponse;
 import org.morago.model.Transaction;
 import org.morago.service.TransactionService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/transactions")
@@ -25,7 +27,7 @@ public class TransactionController {
     public ResponseEntity<TransactionResponse> topUp(
             Authentication authentication,
             @Valid @RequestBody TopUpRequest request
-            ) {
+    ) {
         Transaction transaction = transactionService.topUp(
                 authentication.getName(),
                 request.amount()
@@ -35,14 +37,13 @@ public class TransactionController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<List<TransactionResponse>> getMyTransactions(
-            Authentication authentication
+    public ResponseEntity<Page<TransactionResponse>> getMyTransactions(
+            Authentication authentication,
+            Pageable pageable
     ) {
-        List<TransactionResponse> responses = transactionService
-                .getMyTransactions(authentication.getName())
-                .stream()
-                .map(transactionService::toResponse)
-                .toList();
+        Page<TransactionResponse> responses = transactionService
+                .getMyTransactions(authentication.getName(), pageable)
+                .map(transactionService::toResponse);
 
         return ResponseEntity.ok(responses);
     }
