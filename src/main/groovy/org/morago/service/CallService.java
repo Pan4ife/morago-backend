@@ -14,6 +14,8 @@ import org.morago.repository.TranslatorProfileRepository;
 import org.morago.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +23,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -118,11 +119,9 @@ public class CallService {
         TranslatorProfile translator = translatorProfileRepository.findById(request.translatorId())
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Translator not found"));
-
-        if (!translator.isOnline()) {
+        if(!translator.isOnline()){
             throw new ConflictException("Translator is not available now");
         }
-
         Call call = new Call();
         LocalDateTime now = LocalDateTime.now();
         call.setClient(user);
@@ -131,33 +130,27 @@ public class CallService {
         call.setStartTime(null);
         call.setCost(BigDecimal.ZERO);
         call.setCreatedAt(now);
-
         Call savedCall = callRepository.save(call);
         log.info("Call {} created by user  {}", savedCall.getId(), email);
         return mapToResponse(savedCall);
     }
 
-    public List<CallResponse> getAll(String email) {
+    public Page<CallResponse> getAll(String email, Pageable pageable) {
         User currentUser = getCurrentUser(email);
 
         if (isAdmin(currentUser)) {
-            return callRepository.findAll()
-                    .stream()
-                    .map(this::mapToResponse)
-                    .toList();
+
+            return callRepository.findAll(pageable).map(this::mapToResponse);
         }
 
         if (currentUser.getTranslatorProfile() != null) {
-            return callRepository.findByTranslator_User(currentUser)
-                    .stream()
-                    .map(this::mapToResponse)
-                    .toList();
+
+            return callRepository.findByTranslator_User(currentUser, pageable)
+                    .map(this::mapToResponse);
         }
 
-        return callRepository.findByClient(currentUser)
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
+        return callRepository.findByClient(currentUser, pageable)
+                .map(this::mapToResponse);
     }
 
     public void delete(Long id, String email) {
@@ -186,20 +179,16 @@ public class CallService {
      */
     @Transactional
     public CallResponse finish(Long id, String email) {
-
         Call call = callRepository.findByIdForUpdate(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Call not found"));
 
         User currentUser = getCurrentUser(email);
-
         validateTranslatorAccess(call, currentUser);
         validateCallStatusTransition(call.getStatus(), CallStatus.FINISHED);
 
         Call savedCall = finishInternal(call);
-
         log.info("Call {} was finished by user {}", id, email);
-
         return mapToResponse(savedCall);
     }
 

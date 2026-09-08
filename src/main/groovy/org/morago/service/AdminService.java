@@ -2,6 +2,7 @@ package org.morago.service;
 
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.admin.PendingTranslatorResponse;
+import org.morago.dto.admin.UserPageResponse;
 import org.morago.exception.ForbiddenException;
 import org.morago.exception.ConflictException;
 import org.morago.exception.ResourceNotFoundException;
@@ -31,7 +32,20 @@ public class AdminService {
         return translatorProfileRepository.findByStatus(VerificationStatus.PENDING, pageable)
                 .map(this::mapToPendingTranslatorResponse);
     }
+    public Page<UserPageResponse> getAllUsers(Pageable pageable){
+        return userRepository.findAll(pageable)
+                .map(this::mapToUserPageResponse);
+    }
 
+    private UserPageResponse mapToUserPageResponse(User user){
+        Set<String> roles = user.getRoles().stream().map(Role::getName)
+                .map(Enum::name)
+                .collect(Collectors.toSet());
+        return new UserPageResponse(user.getId(),
+                user.getEmail(),
+                user.getStatus(),
+                roles);
+    }
     private User getCurrentUser(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->

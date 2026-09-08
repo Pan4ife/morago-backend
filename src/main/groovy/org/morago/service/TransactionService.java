@@ -7,6 +7,8 @@ import org.morago.exception.*;
 import org.morago.model.*;
 import org.morago.repository.TransactionRepository;
 import org.morago.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,9 +53,9 @@ public class TransactionService {
         return transactionRepository.save(transaction);
     }
 
-    public List<Transaction> getMyTransactions(String email) {
+    public Page<Transaction> getMyTransactions(String email, Pageable pageable) {
         User user = getCurrentUser(email);
-        return transactionRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+        return transactionRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable);
     }
 
     public TransactionResponse toResponse(Transaction transaction) {

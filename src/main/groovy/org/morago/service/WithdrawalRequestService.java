@@ -9,6 +9,8 @@ import org.morago.model.*;
 import org.morago.repository.TransactionRepository;
 import org.morago.repository.UserRepository;
 import org.morago.repository.WithdrawalRequestRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,15 +60,15 @@ public class    WithdrawalRequestService {
         return withdrawalRequestRepository.save(savedRequest);
     }
 
-    public List<WithdrawalRequest> getMyRequests(String email) {
+    public Page<WithdrawalRequest> getMyRequests(String email, Pageable pageable) {
         User translator = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        return withdrawalRequestRepository.findByTranslatorIdOrderByCreatedAtDesc(translator.getId());
+        return withdrawalRequestRepository.findByTranslatorIdOrderByCreatedAtDesc(translator.getId(), pageable);
     }
 
-    public List<WithdrawalRequest> getPendingRequests() {
-        return withdrawalRequestRepository.findByStatusOrderByCreatedAtDesc(WithdrawalStatus.PENDING);
+    public Page<WithdrawalRequest> getPendingRequests(Pageable pageable) {
+        return withdrawalRequestRepository.findByStatusOrderByCreatedAtDesc(WithdrawalStatus.PENDING, pageable);
     }
 
     @Transactional
