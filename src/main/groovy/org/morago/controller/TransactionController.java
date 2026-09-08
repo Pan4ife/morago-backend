@@ -60,7 +60,7 @@ public class TransactionController {
         Pageable pageable = PaginationValidator.validate(page, size);
         Page<TransactionResponse> responses = transactionService
                 .getMyTransactions(authentication.getName(), pageable)
-                                .map(transactionService::toResponse);
+                .map(transactionService::toResponse);
 
         return ResponseEntity.ok(responses);
     }

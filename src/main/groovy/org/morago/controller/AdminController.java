@@ -42,6 +42,7 @@ public class AdminController {
         Pageable pageable = PaginationValidator.validate(page, size);
         return ResponseEntity.ok(adminService.getAllUsers(pageable));
     }
+
     @Operation(summary = "Получить анкеты переводчиков, ожидающие проверки",
             description = "Возвращает пагинированный список анкет переводчиков со статусом PENDING")
     @ApiResponses(value = {
@@ -66,8 +67,8 @@ public class AdminController {
             @ApiResponse(responseCode = "404", description = "Пользователь с указанным id не найден")
     })
     @PatchMapping("/users/{id}/block")
-    public ResponseEntity<String> block(@PathVariable Long id, Authentication authentication){
-        String adminEmail  = authentication.getName();
+    public ResponseEntity<String> block(@PathVariable Long id, Authentication authentication) {
+        String adminEmail = authentication.getName();
         adminService.blockUser(id, adminEmail);
         return ResponseEntity.ok("User was blocked");
     }
@@ -79,7 +80,7 @@ public class AdminController {
             @ApiResponse(responseCode = "404", description = "Пользователь с указанным id не найден")
     })
     @PatchMapping("/users/{id}/unblock")
-    public ResponseEntity<String> unblock(@PathVariable Long id, Authentication authentication){
+    public ResponseEntity<String> unblock(@PathVariable Long id, Authentication authentication) {
         String adminEmail = authentication.getName();
         adminService.unblockUser(id, adminEmail);
         return ResponseEntity.ok("User was unblocked");
@@ -93,7 +94,7 @@ public class AdminController {
             @ApiResponse(responseCode = "409", description = "Анкета не в статусе PENDING")
     })
     @PatchMapping("/translator-profiles/{id}/approve")
-    public ResponseEntity<String> approve(@PathVariable Long id, Authentication authentication){
+    public ResponseEntity<String> approve(@PathVariable Long id, Authentication authentication) {
         String adminEmail = authentication.getName();
         adminService.approveTranslator(id, adminEmail);
         return ResponseEntity.ok("Translator approved");
@@ -113,8 +114,7 @@ public class AdminController {
             @PathVariable Long id,
             @Valid @RequestBody RejectRequest request,
             Authentication authentication
-    )
-    {
+    ) {
         String adminEmail = authentication.getName();
         adminService.rejectTranslator(id, request.reason(), adminEmail);
         return ResponseEntity.ok("Translator rejected");

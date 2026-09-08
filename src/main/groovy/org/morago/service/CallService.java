@@ -66,6 +66,7 @@ public class CallService {
     }
 
     private void validateTranslatorAccess(Call call, User user) {
+
         if (!isAdmin(user) &&
                 !call.getTranslator()
                         .getUser()
@@ -101,6 +102,7 @@ public class CallService {
     }
 
     private CallResponse mapToResponse(Call call) {
+
         return new CallResponse(
                 call.getId(),
                 call.getClient().getEmail(),
@@ -113,17 +115,18 @@ public class CallService {
         );
     }
 
-    public CallResponse create(String email, CallRequest request) {
+    public CallResponse create(
+            String email,
+            CallRequest request
+    ) {
         User user = getCurrentUser(email);
 
         TranslatorProfile translator = translatorProfileRepository.findById(request.translatorId())
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Translator not found"));
-
-        if (!translator.isOnline()) {
+        if(!translator.isOnline()){
             throw new ConflictException("Translator is not available now");
         }
-
         Call call = new Call();
         LocalDateTime now = LocalDateTime.now();
         call.setClient(user);
@@ -132,7 +135,6 @@ public class CallService {
         call.setStartTime(null);
         call.setCost(BigDecimal.ZERO);
         call.setCreatedAt(now);
-
         Call savedCall = callRepository.save(call);
         log.info("Call {} created by user  {}", savedCall.getId(), email);
         return mapToResponse(savedCall);
@@ -182,45 +184,18 @@ public class CallService {
      */
     @Transactional
     public CallResponse finish(Long id, String email) {
-
         Call call = callRepository.findByIdForUpdate(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Call not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found"));
 
         User currentUser = getCurrentUser(email);
-
         validateTranslatorAccess(call, currentUser);
         validateCallStatusTransition(call.getStatus(), CallStatus.FINISHED);
 
         Call savedCall = finishInternal(call);
-
         log.info("Call {} was finished by user {}", id, email);
-
         return mapToResponse(savedCall);
     }
 
-    /**
-     * Системное завершение звонка по таймауту.
-     * Не проверяет права доступа — вызывается планировщиком (scheduled job),
-     * а не пользователем через API.
-     */
-    @Transactional
-    public void finishByTimeout(Long id) {
-
-    Call call = callRepository.findByIdForUpdate(id)
-            .orElseThrow(() ->
-                    new ResourceNotFoundException("Call not found"));
-
-    validateCallStatusTransition(call.getStatus(), CallStatus.FINISHED);
-
-    finishInternal(call);
-}
-
-    /**
-     * Общая логика завершения звонка: расчёт длительности и стоимости,
-     * списание/начисление баланса, перевод в статус FINISHED.
-     * Используется и ручным завершением, и автоматическим таймаутом.
-     */
     private Call finishInternal(Call call) {
 
         LocalDateTime now = LocalDateTime.now();
@@ -253,6 +228,14 @@ public class CallService {
         transactionService.payForCall(client, translator, cost, call);
 
         return callRepository.save(call);
+    }
+
+    @Transactional
+    public void finishByTimeout(Long id) {
+        Call call = callRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found"));
+        validateCallStatusTransition(call.getStatus(), CallStatus.FINISHED);
+        finishInternal(call);
     }
 
     public CallResponse cancel(Long id, String email) {
