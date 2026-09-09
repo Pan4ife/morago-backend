@@ -10,8 +10,8 @@ import org.morago.dto.admin.PendingTranslatorResponse;
 import org.morago.dto.admin.RejectRequest;
 import org.morago.dto.admin.UserPageResponse;
 import org.morago.service.AdminService;
+import org.morago.util.PaginationValidator;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,11 +36,13 @@ public class AdminController {
     })
     @GetMapping("/users")
     public ResponseEntity<Page<UserPageResponse>> getAllUsers(
-            Pageable pageable
-    ) {
-
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        Pageable pageable = PaginationValidator.validate(page, size);
         return ResponseEntity.ok(adminService.getAllUsers(pageable));
     }
+
     @Operation(summary = "Получить анкеты переводчиков, ожидающие проверки",
             description = "Возвращает пагинированный список анкет переводчиков со статусом PENDING")
     @ApiResponses(value = {
@@ -49,8 +51,10 @@ public class AdminController {
     })
     @GetMapping("/translator-profiles/pending")
     public ResponseEntity<Page<PendingTranslatorResponse>> getPendingTranslators(
-            Pageable pageable
-    ) {
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        Pageable pageable = PaginationValidator.validate(page, size);
         return ResponseEntity.ok(adminService.getPendingTranslatorProfiles(pageable));
 
     }

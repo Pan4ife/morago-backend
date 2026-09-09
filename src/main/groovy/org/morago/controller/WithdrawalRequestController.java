@@ -9,8 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.morago.dto.withdrawal.WithdrawalCreateRequest;
 import org.morago.dto.withdrawal.WithdrawalRequestResponse;
 import org.morago.service.WithdrawalRequestService;
+import org.morago.util.PaginationValidator;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -61,8 +61,10 @@ public class WithdrawalRequestController {
     @PreAuthorize("hasRole('TRANSLATOR')")
     public ResponseEntity<Page<WithdrawalRequestResponse>> getMyRequests(
             Authentication authentication,
-            Pageable pageable
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
     ) {
+        Pageable pageable = PaginationValidator.validate(page, size);
         Page<WithdrawalRequestResponse> responses = withdrawalRequestService
                 .getMyRequests(authentication.getName(), pageable)
                 .map(withdrawalRequestService::toResponse);
@@ -78,8 +80,9 @@ public class WithdrawalRequestController {
     @GetMapping("/admin/pending")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<WithdrawalRequestResponse>> getPendingRequests(
-            Pageable pageable
-    ) {
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PaginationValidator.validate(page, size);
         Page<WithdrawalRequestResponse> responses = withdrawalRequestService
                 .getPendingRequests(pageable)
                 .map(withdrawalRequestService::toResponse);
