@@ -6,7 +6,6 @@ import org.morago.dto.call.CallRequest;
 import org.morago.dto.call.CallResponse;
 import org.morago.service.CallService;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -95,5 +94,4 @@ public class CallController {
                 authentication.getName())
         );
     }
-
 }
