@@ -22,6 +22,7 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
+    private final PaymentNotificationService paymentNotificationService;
 
     private User getCurrentUser(String email) {
         return userRepository.findByEmail(email)
@@ -49,8 +50,9 @@ public class TransactionService {
         transaction.setStatus(TransactionStatus.COMPLETED);
         transaction.setCreatedAt(now);
         transaction.setCompletedAt(now);
-
-        return transactionRepository.save(transaction);
+        Transaction topUpTransaction = transactionRepository.save(transaction);
+        paymentNotificationService.notifyTopUp(topUpTransaction);
+        return topUpTransaction;
     }
 
     public Page<Transaction> getMyTransactions(String email, Pageable pageable) {
@@ -91,24 +93,26 @@ public class TransactionService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        Transaction chargeTransaction = new Transaction();
-        chargeTransaction.setUser(client);
-        chargeTransaction.setCall(call);
-        chargeTransaction.setAmount(amount.negate());
-        chargeTransaction.setType(TransactionType.CALL_CHARGE);
-        chargeTransaction.setStatus(TransactionStatus.COMPLETED);
-        chargeTransaction.setCreatedAt(now);
-        chargeTransaction.setCompletedAt(now);
-        transactionRepository.save(chargeTransaction);
+        Transaction clientTransaction = new Transaction();
+        clientTransaction.setUser(client);
+        clientTransaction.setCall(call);
+        clientTransaction.setAmount(amount.negate());
+        clientTransaction.setType(TransactionType.CALL_CHARGE);
+        clientTransaction.setStatus(TransactionStatus.COMPLETED);
+        clientTransaction.setCreatedAt(now);
+        clientTransaction.setCompletedAt(now);
+        Transaction clientChargeTransaction = transactionRepository.save(clientTransaction);
+        paymentNotificationService.notifyTransactionCharged(clientChargeTransaction);
 
-        Transaction earningTransaction = new Transaction();
-        earningTransaction.setUser(translator);
-        earningTransaction.setCall(call);
-        earningTransaction.setAmount(amount);
-        earningTransaction.setType(TransactionType.CALL_EARNING);
-        earningTransaction.setStatus(TransactionStatus.COMPLETED);
-        earningTransaction.setCreatedAt(now);
-        earningTransaction.setCompletedAt(now);
-        transactionRepository.save(earningTransaction);
+        Transaction translatorTransaction = new Transaction();
+        translatorTransaction.setUser(translator);
+        translatorTransaction.setCall(call);
+        translatorTransaction.setAmount(amount);
+        translatorTransaction.setType(TransactionType.CALL_EARNING);
+        translatorTransaction.setStatus(TransactionStatus.COMPLETED);
+        translatorTransaction.setCreatedAt(now);
+        translatorTransaction.setCompletedAt(now);
+        Transaction transalatorEarnedTransaction = transactionRepository.save(translatorTransaction);
+        paymentNotificationService.notifyTransactionEarned(transalatorEarnedTransaction);
     }
 }

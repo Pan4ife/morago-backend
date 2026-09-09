@@ -25,6 +25,7 @@ public class WithdrawalRequestService {
     private final WithdrawalRequestRepository withdrawalRequestRepository;
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
+    private final PaymentNotificationService paymentNotificationService;
 
     @Transactional
     public WithdrawalRequest create(String email, BigDecimal amount) {
@@ -44,8 +45,8 @@ public class WithdrawalRequestService {
         request.setAmount(amount);
         request.setStatus(WithdrawalStatus.PENDING);
         request.setCreatedAt(LocalDateTime.now());
-
         WithdrawalRequest savedRequest = withdrawalRequestRepository.save(request);
+
 
         Transaction transaction = new Transaction();
         transaction.setUser(translator);
@@ -57,7 +58,9 @@ public class WithdrawalRequestService {
         Transaction savedTransaction = transactionRepository.save(transaction);
 
         savedRequest.setTransactionId(savedTransaction.getId());
-        return withdrawalRequestRepository.save(savedRequest);
+        WithdrawalRequest createdWithdrawalRequest = withdrawalRequestRepository.save(savedRequest);
+        paymentNotificationService.notifyWithdrawalCreated(createdWithdrawalRequest);
+        return createdWithdrawalRequest;
     }
 
     public Page<WithdrawalRequest> getMyRequests(String email, Pageable pageable) {
@@ -83,8 +86,9 @@ public class WithdrawalRequestService {
 
         request.setStatus(WithdrawalStatus.APPROVED);
         request.setProcessedAt(LocalDateTime.now());
-
-        return withdrawalRequestRepository.save(request);
+        WithdrawalRequest approvedWithdrawal =  withdrawalRequestRepository.save(request);
+        paymentNotificationService.notifyWithdrawalApproved(approvedWithdrawal);
+        return approvedWithdrawal;
     }
 
     @Transactional
@@ -105,8 +109,9 @@ public class WithdrawalRequestService {
         request.setProcessedAt(LocalDateTime.now());
 
         markTransactionAs(request.getTransactionId(), TransactionStatus.FAILED);
-
-        return withdrawalRequestRepository.save(request);
+        WithdrawalRequest rejectedWithdrawal = withdrawalRequestRepository.save(request);
+        paymentNotificationService.notifyWithdrawalRejected(rejectedWithdrawal);
+        return rejectedWithdrawal;
     }
 
     @Transactional
@@ -122,8 +127,9 @@ public class WithdrawalRequestService {
         request.setProcessedAt(LocalDateTime.now());
 
         markTransactionAs(request.getTransactionId(), TransactionStatus.COMPLETED);
-
-        return withdrawalRequestRepository.save(request);
+        WithdrawalRequest markedAsPaid = withdrawalRequestRepository.save(request);
+        paymentNotificationService.notifyWithdrawalPaid(markedAsPaid);
+        return markedAsPaid;
     }
 
     private void markTransactionAs(Long transactionId, TransactionStatus status) {
