@@ -2,6 +2,7 @@ package org.morago.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +34,10 @@ public class SwaggerConfig {
 
                                                 .bearerFormat("JWT")
                                 )
-                );
+                )
+                .info(new Info()
+                .title("Morago API")
+                .description("Backend для приложения для оказания услуг переводчиков: звонки, отзывы, транзакции, вывод средств, администрирование")
+                .version("1.0.0"));
     }
 }

@@ -127,108 +127,75 @@ class SecurityIntegrationTests {
 
     @Test
     void interpreterCannotAccessOtherCall() throws Exception {
-        String adminToken = obtainAccessTokenWithRole("call-admin@morago.com", "password123", RoleName.ADMIN);
+        CallLifecycleSetup setup = setupOnlineTranslatorAndFundedClientCall();
 
-        MvcResult languageResult = mockMvc.perform(post("/languages")
-                        .header("Authorization", "Bearer " + adminToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\": \"French\"}"))
-                .andReturn();
-        Long languageId = extractId(languageResult);
+        String wrongTranslatorAccessToken = obtainAccessTokenWithRole(
+                "wrong-translator@morago.com", "password123", RoleName.TRANSLATOR);
 
-        MvcResult topic = mockMvc.perform(post("/topics")
-                .header("Authorization", "Bearer " + adminToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"name\": \"Topic 4\"}"))
-                .andReturn();
-        Long topicId = extractId(topic);
-
-        String userAccessToken = obtainAccessToken("user@morago.com", "password123");
-
-        MvcResult userRequestTranslatorProfile = mockMvc.perform(post("/translator-profile")
-                .header("Authorization", "Bearer " + userAccessToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"bio\": \"Bla Bla Bla\", " +
-                                "\"languageIds\": ["+ languageId +"], " +
-                                "\"topicIds\": ["+ topicId + "], " +
-                               "\"hourlyRate\":  500 }"))
-                .andReturn();
-        Long translatorProfileId = extractId(userRequestTranslatorProfile);
-        markTranslatorOnline(translatorProfileId);
-
-        String clientAccessToken = obtainAccessToken("client@morago.com", "password123");
-
-        MvcResult clientCall = mockMvc.perform(post("/calls")
-                .header("Authorization", "Bearer " + clientAccessToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"translatorId\": "+ translatorProfileId +"}"))
-                .andReturn();
-        Long clientCallId = extractId(clientCall);
-
-        String wrongTranslatorAccessToken = obtainAccessTokenWithRole("wrong-translator@morago.com",
-                "password123", RoleName.TRANSLATOR);
-
-        MvcResult wrongTranslatorCalls = mockMvc.perform(patch("/calls/"+ clientCallId +"/start")
-                .header("Authorization", "Bearer " + wrongTranslatorAccessToken)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden()).andReturn();
-
+        mockMvc.perform(patch("/calls/" + setup.callId() + "/start")
+                        .header("Authorization", "Bearer " + wrongTranslatorAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
     }
 
-    private record CallLifecycleSetup(
-            String translatorAccessToken,
-            Long translatorProfileId,
-            String clientAccessToken,
-            Long callId
-    ) {}
+    @Test
+    void checkingCallStatusTransitionFromCancelledToCancelled() throws Exception {
+        CallLifecycleSetup setup = setupOnlineTranslatorAndFundedClientCall();
 
-    private CallLifecycleSetup setupOnlineTranslatorAndFundedClientCall() throws Exception {
-        String adminToken = obtainAccessTokenWithRole("call-admin@morago.com", "password123", RoleName.ADMIN);
+        mockMvc.perform(patch("/calls/" + setup.callId() + "/cancel")
+                        .header("Authorization", "Bearer " + setup.clientAccessToken())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
 
-        MvcResult languageResult = mockMvc.perform(post("/languages")
-                        .header("Authorization", "Bearer " + adminToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\": \"French\"}"))
-                .andReturn();
-        Long languageId = extractId(languageResult);
+        mockMvc.perform(patch("/calls/" + setup.callId() + "/cancel")
+                        .header("Authorization", "Bearer " + setup.clientAccessToken())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isConflict());
+    }
 
-        MvcResult topic = mockMvc.perform(post("/topics")
-                        .header("Authorization", "Bearer " + adminToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\": \"Topic 4\"}"))
-                .andReturn();
-        Long topicId = extractId(topic);
+    @Test
+    void checkingCallStatusTransitionFromCancelledToFinished() throws Exception {
+        CallLifecycleSetup setup = setupOnlineTranslatorAndFundedClientCall();
 
-        String translatorAccessToken = obtainAccessTokenWithRole("translator@morago.com", "password123",
-                RoleName.TRANSLATOR);
+        mockMvc.perform(patch("/calls/" + setup.callId() + "/cancel")
+                        .header("Authorization", "Bearer " + setup.clientAccessToken())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
 
-        MvcResult translatorRequestTranslatorProfile = mockMvc.perform(post("/translator-profile")
-                        .header("Authorization", "Bearer " + translatorAccessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"bio\": \"Bla Bla Bla\", " +
-                                "\"languageIds\": ["+ languageId +"], " +
-                                "\"topicIds\": ["+ topicId + "], " +
-                                "\"hourlyRate\":  500 }"))
-                .andReturn();
-        Long translatorProfileId = extractId(translatorRequestTranslatorProfile);
-        markTranslatorOnline(translatorProfileId);
+        mockMvc.perform(patch("/calls/" + setup.callId() + "/finish")
+                        .header("Authorization", "Bearer " + setup.translatorAccessToken())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isConflict());
+    }
 
-        String clientAccessToken = obtainAccessToken("client@morago.com", "password123");
+    @Test
+    void checkingCallStatusTransitionFromInProgressToInProgress() throws Exception {
+        CallLifecycleSetup setup = setupOnlineTranslatorAndFundedClientCall();
 
-        mockMvc.perform(post("/transactions/top-up")
-                        .header("Authorization", "Bearer " + clientAccessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"amount\": 1000}"))
-                .andReturn();
+        mockMvc.perform(patch("/calls/" + setup.callId() + "/start")
+                        .header("Authorization", "Bearer " + setup.translatorAccessToken())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
 
-        MvcResult clientCall = mockMvc.perform(post("/calls")
-                        .header("Authorization", "Bearer " + clientAccessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"translatorId\": "+ translatorProfileId +"}"))
-                .andReturn();
-        Long callId = extractId(clientCall);
+        mockMvc.perform(patch("/calls/" + setup.callId() + "/start")
+                        .header("Authorization", "Bearer " + setup.translatorAccessToken())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isConflict());
+    }
 
-        return new CallLifecycleSetup(translatorAccessToken, translatorProfileId, clientAccessToken, callId);
+    @Test
+    void checkingCallStatusTransitionFromInProgressToCancelled() throws Exception {
+        CallLifecycleSetup setup = setupOnlineTranslatorAndFundedClientCall();
+
+        mockMvc.perform(patch("/calls/" + setup.callId() + "/start")
+                        .header("Authorization", "Bearer " + setup.translatorAccessToken())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/calls/" + setup.callId() + "/cancel")
+                        .header("Authorization", "Bearer " + setup.clientAccessToken())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isConflict());
     }
 
     @Test
@@ -348,6 +315,62 @@ class SecurityIntegrationTests {
         String responseBody = result.getResponse().getContentAsString();
         JsonNode json = new ObjectMapper().readTree(responseBody);
         return json.get("id").asLong();
+    }
+
+    private record CallLifecycleSetup(
+            String translatorAccessToken,
+            Long translatorProfileId,
+            String clientAccessToken,
+            Long callId
+    ) {}
+
+    private CallLifecycleSetup setupOnlineTranslatorAndFundedClientCall() throws Exception {
+        String adminToken = obtainAccessTokenWithRole("call-admin@morago.com", "password123", RoleName.ADMIN);
+
+        MvcResult languageResult = mockMvc.perform(post("/languages")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\": \"French\"}"))
+                .andReturn();
+        Long languageId = extractId(languageResult);
+
+        MvcResult topic = mockMvc.perform(post("/topics")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\": \"Topic 4\"}"))
+                .andReturn();
+        Long topicId = extractId(topic);
+
+        String translatorAccessToken = obtainAccessTokenWithRole("translator@morago.com", "password123",
+                RoleName.TRANSLATOR);
+
+        MvcResult translatorRequestTranslatorProfile = mockMvc.perform(post("/translator-profile")
+                        .header("Authorization", "Bearer " + translatorAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"bio\": \"Bla Bla Bla\", " +
+                                "\"languageIds\": ["+ languageId +"], " +
+                                "\"topicIds\": ["+ topicId + "], " +
+                                "\"hourlyRate\":  500 }"))
+                .andReturn();
+        Long translatorProfileId = extractId(translatorRequestTranslatorProfile);
+        markTranslatorOnline(translatorProfileId);
+
+        String clientAccessToken = obtainAccessToken("client@morago.com", "password123");
+
+        mockMvc.perform(post("/transactions/top-up")
+                        .header("Authorization", "Bearer " + clientAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"amount\": 1000}"))
+                .andReturn();
+
+        MvcResult clientCall = mockMvc.perform(post("/calls")
+                        .header("Authorization", "Bearer " + clientAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"translatorId\": "+ translatorProfileId +"}"))
+                .andReturn();
+        Long callId = extractId(clientCall);
+
+        return new CallLifecycleSetup(translatorAccessToken, translatorProfileId, clientAccessToken, callId);
     }
 
     @BeforeEach

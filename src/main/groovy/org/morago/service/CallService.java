@@ -3,11 +3,7 @@ package org.morago.service;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.call.CallRequest;
 import org.morago.dto.call.CallResponse;
-import org.morago.exception.ConflictException;
-import org.morago.exception.InsufficientBalanceException;
-import org.morago.exception.ForbiddenException;
-import org.morago.exception.InvalidCallStatusTransitionException;
-import org.morago.exception.ResourceNotFoundException;
+import org.morago.exception.*;
 import org.morago.model.*;
 import org.morago.repository.CallRepository;
 import org.morago.repository.TranslatorProfileRepository;
@@ -33,6 +29,7 @@ public class CallService {
     private final CallRepository callRepository;
     private final UserRepository userRepository;
     private final TranslatorProfileRepository translatorProfileRepository;
+    private final CallNotificationService callNotificationService;
     private final TransactionService transactionService;
 
     private static final Logger log = LoggerFactory.getLogger(CallService.class);
@@ -66,6 +63,7 @@ public class CallService {
     }
 
     private void validateTranslatorAccess(Call call, User user) {
+
         if (!isAdmin(user) &&
                 !call.getTranslator()
                         .getUser()
@@ -101,6 +99,7 @@ public class CallService {
     }
 
     private CallResponse mapToResponse(Call call) {
+
         return new CallResponse(
                 call.getId(),
                 call.getClient().getEmail(),
@@ -112,8 +111,12 @@ public class CallService {
                 call.getCost()
         );
     }
+
     @Transactional
-    public CallResponse create(String email, CallRequest request) {
+    public CallResponse create(
+            String email,
+            CallRequest request
+    ) {
         User user = getCurrentUser(email);
 
         TranslatorProfile translator = translatorProfileRepository.findById(request.translatorId())
@@ -131,6 +134,7 @@ public class CallService {
         call.setCost(BigDecimal.ZERO);
         call.setCreatedAt(now);
         Call savedCall = callRepository.save(call);
+        callNotificationService.notifyIncomingCall(savedCall);
         log.info("Call {} created by user  {}", savedCall.getId(), email);
         return mapToResponse(savedCall);
     }
@@ -188,26 +192,10 @@ public class CallService {
         validateCallStatusTransition(call.getStatus(), CallStatus.FINISHED);
 
         Call savedCall = finishInternal(call);
+        callNotificationService.notifyCallFinished(savedCall);
         log.info("Call {} was finished by user {}", id, email);
         return mapToResponse(savedCall);
     }
-
-    /**
-     * Системное завершение звонка по таймауту.
-     * Не проверяет права доступа — вызывается планировщиком (scheduled job),
-     * а не пользователем через API.
-     */
-    @Transactional
-    public void finishByTimeout(Long id) {
-
-    Call call = callRepository.findByIdForUpdate(id)
-            .orElseThrow(() ->
-                    new ResourceNotFoundException("Call not found"));
-
-    validateCallStatusTransition(call.getStatus(), CallStatus.FINISHED);
-
-    finishInternal(call);
-}
 
     /**
      * Общая логика завершения звонка: расчёт длительности и стоимости,
@@ -248,6 +236,20 @@ public class CallService {
         return callRepository.save(call);
     }
 
+    /**
+     * Системное завершение звонка по таймауту.
+     * Не проверяет права доступа — вызывается планировщиком (scheduled job),
+     * а не пользователем через API.
+     */
+    @Transactional
+    public void finishByTimeout(Long id) {
+        Call call = callRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found"));
+        validateCallStatusTransition(call.getStatus(), CallStatus.FINISHED);
+        Call savedCall = finishInternal(call);
+        callNotificationService.notifyCallFinished(savedCall);
+    }
+
     @Transactional
     public CallResponse cancel(Long id, String email) {
 
@@ -276,9 +278,7 @@ public class CallService {
 
         User currentUser = getCurrentUser(email);
         validateTranslatorAccess(call, currentUser);
-
         validateCallStatusTransition(call.getStatus(), CallStatus.IN_PROGRESS);
-
         User client = call.getClient();
         if (client.getBalance().compareTo(BigDecimal.ZERO) <= 0) {
             throw new InsufficientBalanceException("Недостаточно средств у клиента для начала звонка");
@@ -288,8 +288,8 @@ public class CallService {
         call.setStatus(CallStatus.IN_PROGRESS);
         call.setStartTime(now);
         call.setUpdatedAt(now);
-
         Call savedCall = callRepository.save(call);
+        callNotificationService.notifyCallStarted(savedCall);
         log.info("Call {} was started by user {}", id, email);
         return mapToResponse(savedCall);
     }
