@@ -63,6 +63,7 @@ public class CallService {
     }
 
     private void validateTranslatorAccess(Call call, User user) {
+
         if (!isAdmin(user) &&
                 !call.getTranslator()
                         .getUser()
@@ -98,6 +99,7 @@ public class CallService {
     }
 
     private CallResponse mapToResponse(Call call) {
+
         return new CallResponse(
                 call.getId(),
                 call.getClient().getEmail(),
@@ -182,7 +184,8 @@ public class CallService {
     @Transactional
     public CallResponse finish(Long id, String email) {
         Call call = callRepository.findByIdForUpdate(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Call not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Call not found"));
 
         User currentUser = getCurrentUser(email);
         validateTranslatorAccess(call, currentUser);
@@ -257,16 +260,16 @@ public class CallService {
         User currentUser = getCurrentUser(email);
         validateClientAccess(call, currentUser);
         validateCallStatusTransition(call.getStatus(), CallStatus.CANCELLED);
+
         LocalDateTime now = LocalDateTime.now();
         call.setStatus(CallStatus.CANCELLED);
         call.setEndTime(now);
         call.setUpdatedAt(now);
+
         Call savedCall = callRepository.save(call);
-        callNotificationService.notifyCallCancelled(savedCall);
         log.info("Call {} was canceled by user {}", id, email);
         return mapToResponse(savedCall);
     }
-
     @Transactional
     public CallResponse start(Long id, String email) {
 

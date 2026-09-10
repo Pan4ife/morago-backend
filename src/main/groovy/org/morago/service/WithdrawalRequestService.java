@@ -20,7 +20,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class WithdrawalRequestService {
+public class    WithdrawalRequestService {
 
     private final WithdrawalRequestRepository withdrawalRequestRepository;
     private final UserRepository userRepository;
