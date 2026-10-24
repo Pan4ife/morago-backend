@@ -63,7 +63,7 @@ def judge_metrics(out_dir: Path, try_no: int) -> dict:
 
 
 def main() -> int:
-    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
     p = argparse.ArgumentParser()
     p.add_argument("task")
     p.add_argument("--tries", type=int)

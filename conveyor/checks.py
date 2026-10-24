@@ -77,8 +77,8 @@ def changed_files(base: str, only_added: bool = False) -> list[str]:
 
 
 def diff_text(base: str, limit: int = 60000) -> str:
-    parts = [git("diff", base)]
-    for f in git("ls-files", "--others", "--exclude-standard").splitlines():
+    parts = [git("diff", base, "--", ".", ":(exclude)reports/**")]
+    for f in git("ls-files", "--others", "--exclude-standard", "--", ".", ":(exclude)reports/**").splitlines():
         p = ROOT / f
         if p.is_file() and p.stat().st_size < 50000:
             parts.append(f"\n=== НОВЫЙ ФАЙЛ {f} ===\n" + p.read_text(encoding="utf-8", errors="replace"))
