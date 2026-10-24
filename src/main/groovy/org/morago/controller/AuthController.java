@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.morago.dto.auth.JwtResponse;
+import org.morago.dto.auth.MeResponse;
 import org.morago.dto.auth.LoginRequest;
 import org.morago.dto.auth.RefreshRequest;
 import org.morago.dto.auth.RegisterRequest;
@@ -77,16 +78,14 @@ public class AuthController {
     }
 
     @Operation(summary = "Получить email текущего пользователя",
-            description = "Возвращает email пользователя, соответствующего переданному access-токену")
+            description = "Возвращает id, email, роли, баланс и id анкеты переводчика (или null) текущего пользователя")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Email успешно возвращён")
+            @ApiResponse(responseCode = "200", description = "Данные пользователя успешно возвращены")
     })
 
     @GetMapping("/me")
-    public ResponseEntity<String> me(Authentication authentication) {
-
-
-        return ResponseEntity.ok(authentication.getName());
+    public ResponseEntity<MeResponse> me(Authentication authentication) {
+        return ResponseEntity.ok(authService.me(authentication.getName()));
     }
 
     @Operation(summary = "Выход из системы",

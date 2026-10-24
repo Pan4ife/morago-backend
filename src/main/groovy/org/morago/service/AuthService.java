@@ -8,6 +8,7 @@ import org.morago.model.*;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.auth.JwtResponse;
+import org.morago.dto.auth.MeResponse;
 import org.morago.dto.auth.LoginRequest;
 import org.morago.dto.auth.RefreshRequest;
 import org.morago.dto.auth.RegisterRequest;
@@ -34,6 +35,17 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
+    @Transactional(readOnly = true)
+    public MeResponse me(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        Set<String> roles = new HashSet<>();
+        user.getRoles().forEach(role -> roles.add(role.getName().name()));
+        TranslatorProfile profile = user.getTranslatorProfile();
+        return new MeResponse(user.getId(), user.getEmail(), roles, user.getBalance(),
+                profile == null ? null : profile.getId());
+    }
 
     public void register(RegisterRequest request) {
 
