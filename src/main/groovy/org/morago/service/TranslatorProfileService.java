@@ -9,10 +9,13 @@ import org.morago.model.Language;
 import org.morago.model.Topic;
 import org.morago.model.TranslatorProfile;
 import org.morago.model.User;
+import org.morago.model.VerificationStatus;
 import org.morago.repository.LanguageRepository;
 import org.morago.repository.TopicRepository;
 import org.morago.repository.TranslatorProfileRepository;
 import org.morago.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +36,19 @@ public class TranslatorProfileService {
     private final LanguageRepository languageRepository;
 
     private final TopicRepository topicRepository;
+
+    @Transactional(readOnly = true)
+    public Page<TranslatorProfileResponse> getVerified(Pageable pageable) {
+        return translatorProfileRepository.findByStatus(VerificationStatus.VERIFIED, pageable)
+                .map(profile -> new TranslatorProfileResponse(
+                        profile.getId(),
+                        profile.getUser().getEmail(),
+                        profile.getBio(),
+                        profile.getRating(),
+                        profile.isOnline(),
+                        profile.getHourlyRate()
+                ));
+    }
 
     public TranslatorProfileResponse create(String email, TranslatorProfileRequest request) {
 
