@@ -23,11 +23,10 @@ import java.util.Optional;
 
         @Override
         public AuthorizationResult getAuthorizationResult(HandshakeData handshakeData) {
-            String header = handshakeData.getHttpHeaders().get("Authorization");
-            if (header == null ||!header.startsWith("Bearer ")){
+            String token = extractToken(handshakeData);
+            if (token == null || token.isBlank()) {
                 return AuthorizationResult.FAILED_AUTHORIZATION;
             }
-            String token = header.substring(7);
             String username;
 
             try {
@@ -52,6 +51,16 @@ import java.util.Optional;
             }
             Map<String, Object> storeParams = Map.of("userId", user.getId());
             return new AuthorizationResult(true, storeParams);
+        }
+
+        // Браузер не умеет ставить заголовок при WebSocket-подключении, поэтому токен можно передать в ?token=.
+        // Если есть заголовок Bearer — он главнее параметра.
+        private String extractToken(HandshakeData handshakeData) {
+            String header = handshakeData.getHttpHeaders().get("Authorization");
+            if (header != null && header.startsWith("Bearer ")) {
+                return header.substring(7);
+            }
+            return handshakeData.getSingleUrlParam("token");
         }
     }
 
