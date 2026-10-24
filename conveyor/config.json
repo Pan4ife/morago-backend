@@ -1,0 +1,19 @@
+{
+  "base_branch": "experiment",
+  "max_tries": 3,
+  "executor_model": "opus",
+  "judge_model": "sonnet",
+  "executor_timeout_min": 30,
+  "judge_timeout_min": 10,
+  "mvn_timeout_min": 15,
+  "ignored_for_scope": ["reports/**", "target/**"],
+  "protected": [
+    "CLAUDE.md",
+    "conveyor/**",
+    "tasks/**",
+    "experiment.md",
+    "pom.xml",
+    ".gitignore",
+    ".claude/**"
+  ]
+}
