@@ -36,6 +36,9 @@ public class WithdrawalRequestServiceTest {
     @Mock
     private TransactionRepository transactionRepository;
 
+    @Mock
+    private PaymentNotificationService paymentNotificationService;
+
     @InjectMocks
     private WithdrawalRequestService withdrawalRequestService;
 
@@ -62,6 +65,7 @@ public class WithdrawalRequestServiceTest {
         assertEquals(BigDecimal.valueOf(200), translator.getBalance());
 
         verify(withdrawalRequestRepository, never()).save(any(WithdrawalRequest.class));
+        verifyNoInteractions(paymentNotificationService);
     }
 
     @Test
@@ -82,6 +86,7 @@ public class WithdrawalRequestServiceTest {
         assertEquals(WithdrawalStatus.PENDING, result.getStatus());
 
         verify(userRepository).save(translator);
+        verify(paymentNotificationService).notifyWithdrawalCreated(result);
     }
 
     @Test
@@ -102,6 +107,8 @@ public class WithdrawalRequestServiceTest {
 
         assertEquals(WithdrawalStatus.APPROVED, result.getStatus());
         assertNotNull(result.getProcessedAt());
+
+        verify(paymentNotificationService).notifyWithdrawalApproved(result);
     }
 
     @Test
@@ -117,6 +124,8 @@ public class WithdrawalRequestServiceTest {
         assertThrows(ConflictException.class, () ->
                 withdrawalRequestService.approve(1L)
         );
+
+        verifyNoInteractions(paymentNotificationService);
     }
 
     @Test
@@ -143,5 +152,6 @@ public class WithdrawalRequestServiceTest {
         assertEquals(BigDecimal.valueOf(200), translator.getBalance()); // деньги вернулись
 
         verify(userRepository).save(translator);
+        verify(paymentNotificationService).notifyWithdrawalRejected(result);
     }
 }

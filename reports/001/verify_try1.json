@@ -1,0 +1,83 @@
+{
+  "green": true,
+  "results": [
+    {
+      "name": "scope",
+      "status": "PASS",
+      "summary": "изменено файлов: 2, все в папках роли",
+      "details": "src/test/groovy/org/morago/service/TransactionServiceTest.java\nsrc/test/groovy/org/morago/service/WithdrawalRequestServiceTest.java",
+      "seconds": 0.5096142999973381,
+      "data": {}
+    },
+    {
+      "name": "build_tests",
+      "status": "PASS",
+      "summary": "тестов 12 (было 12), красных 2 — все были красными на main",
+      "details": "\nКрасные сейчас: CallServiceConcurrencyTest.finishCallConcurrently_shouldChargeOnlyOnce, SecurityIntegrationTests.\n\n         - @ConditionalOnClass did not find required class 'org.springframework.boot.micrometer.observation.autoconfigure.ObservationProperties' (OnClassCondition)\n\n   XADataSourceAutoConfiguration:\n      Did not match:\n         - @ConditionalOnBean (types: org.springframework.boot.jdbc.XADataSourceWrapper; SearchStrategy: all) did not find any beans of type org.springframework.boot.jdbc.XADataSourceWrapper (OnBeanCondition)\n      Matched:\n         - @ConditionalOnClass found required classes 'javax.sql.DataSource', 'jakarta.transaction.TransactionManager', 'org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType' (OnClassCondition)\n\n\nExclusions:\n-----------\n\n    None\n\n\nUnconditional classes:\n----------------------\n\n    org.springframework.boot.autoconfigure.context.ConfigurationPropertiesAutoConfiguration\n\n    org.springframework.boot.autoconfigure.ssl.SslAutoConfiguration\n\n    org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration\n\n    org.springframework.boot.autoconfigure.context.LifecycleAutoConfiguration\n\n    org.springdoc.core.configuration.SpringDocSpecPropertiesConfiguration\n\n    org.springframework.boot.autoconfigure.availability.ApplicationAvailabilityAutoConfiguration\n\n    org.springframework.boot.autoconfigure.info.ProjectInfoAutoConfiguration\n\n\n\nMockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3\nJava HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended\nWARNING: A Java agent has been loaded dynamically (C:\\Users\\span4\\.m2\\repository\\net\\bytebuddy\\byte-buddy-agent\\1.18.10\\byte-buddy-agent-1.18.10.jar)\nWARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning\nWARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information\nWARNING: Dynamic loading of agents will be disallowed by default in a future release",
+      "seconds": 36.93709089999902,
+      "data": {
+        "tests": {
+          "CallServiceConcurrencyTest.finishCallConcurrently_shouldChargeOnlyOnce": "FAIL",
+          "SecurityIntegrationTests.": "FAIL",
+          "TransactionServiceTest.topUp_shouldIncreaseBalance_whenAmountIsPositive": "PASS",
+          "TransactionServiceTest.payForCall_shouldTransferMoneyFromClientToTranslator": "PASS",
+          "TransactionServiceTest.payForCall_shouldAllowNegativeBalance_whenClientRunsOutOfFundsDuringCall": "PASS",
+          "TransactionServiceTest.topUp_shouldThrow_whenAmountIsNegative": "PASS",
+          "TransactionServiceTest.topUp_shouldThrow_whenAmountIsZero": "PASS",
+          "WithdrawalRequestServiceTest.create_shouldReserveFunds_whenAmountIsValid": "PASS",
+          "WithdrawalRequestServiceTest.reject_shouldRefundBalance": "PASS",
+          "WithdrawalRequestServiceTest.approve_shouldThrow_whenRequestIsNotPending": "PASS",
+          "WithdrawalRequestServiceTest.approve_shouldChangeStatusToApproved": "PASS",
+          "WithdrawalRequestServiceTest.create_shouldThrow_whenAmountExceedsBalance": "PASS"
+        }
+      }
+    },
+    {
+      "name": "judge",
+      "status": "PASS",
+      "summary": "судья sonnet: принято",
+      "details": "[PASS] 1. Все тесты TransactionServiceTest и WithdrawalRequestServiceTest зелёные (5 + 5) — verify_try1.json, data.tests — все 5 тестов TransactionServiceTest и все 5 тестов WithdrawalRequestServiceTest в статусе PASS. Красные только CallServiceConcurrencyTest и SecurityIntegrationTests; они вне рамок и были красными на main.\n[PASS] 2. Ни один тест не удалён, не отключён, проверки не ослаблены — В диффе только строки с «+»: заглушка PaymentNotificationService, новые verify и verifyNoInteractions, одна заглушка save для возврата переданного объекта. Старые assert и verify на месте. Тестов 12, было 12.\n[PASS] 3. В тестах с деньгами проверено, что ушло нужное уведомление — TransactionServiceTest: topUp — verify(notifyTopUp(result)). payForCall — notifyTransactionCharged и notifyTransactionEarned, с проверкой пользователя, типа и суммы (CALL_CHARGE с -amount, CALL_EARNING с +amount). Это совпадает с TransactionService.java:96-116. WithdrawalRequestServiceTest: create — notifyWithdrawalCreated, approve — notifyWithdrawalApproved, reject — notifyWithdrawalRejected. Вызовы в WithdrawalRequestService.java:62, 90, 113.\n[PASS] 4. Код в src/main/ не изменён — scope PASS: изменено 2 файла, оба в src/test/groovy/org/morago/service/. Дифф не содержит файлов из src/main.\nзаметка: [мелочь] В payForCall добавлена заглушка transactionRepository.save(...).thenAnswer(...). Это нужно, чтобы в уведомление приходил не null, и старые проверки она не ослабляет. Исполнитель сам объяснил это в отчёте.\nзаметка: [мелочь] В тестах отказов (сумма 0 или меньше, не хватает денег, заявка уже обработана) добавлена проверка, что уведомлений не было. Это сверх критериев, но делает тесты строже и в рамки роли укладывается.\nзаметка: [системное] Судья в конвейере был отключён (--no-judge), поэтому эта проверка выполнена отдельно, вручную.",
+      "seconds": 24.21689239999978,
+      "data": {
+        "verdict": "PASS",
+        "criteria": [
+          {
+            "criterion": "1. Все тесты TransactionServiceTest и WithdrawalRequestServiceTest зелёные (5 + 5)",
+            "status": "PASS",
+            "evidence": "verify_try1.json, data.tests — все 5 тестов TransactionServiceTest и все 5 тестов WithdrawalRequestServiceTest в статусе PASS. Красные только CallServiceConcurrencyTest и SecurityIntegrationTests; они вне рамок и были красными на main."
+          },
+          {
+            "criterion": "2. Ни один тест не удалён, не отключён, проверки не ослаблены",
+            "status": "PASS",
+            "evidence": "В диффе только строки с «+»: заглушка PaymentNotificationService, новые verify и verifyNoInteractions, одна заглушка save для возврата переданного объекта. Старые assert и verify на месте. Тестов 12, было 12."
+          },
+          {
+            "criterion": "3. В тестах с деньгами проверено, что ушло нужное уведомление",
+            "status": "PASS",
+            "evidence": "TransactionServiceTest: topUp — verify(notifyTopUp(result)). payForCall — notifyTransactionCharged и notifyTransactionEarned, с проверкой пользователя, типа и суммы (CALL_CHARGE с -amount, CALL_EARNING с +amount). Это совпадает с TransactionService.java:96-116. WithdrawalRequestServiceTest: create — notifyWithdrawalCreated, approve — notifyWithdrawalApproved, reject — notifyWithdrawalRejected. Вызовы в WithdrawalRequestService.java:62, 90, 113."
+          },
+          {
+            "criterion": "4. Код в src/main/ не изменён",
+            "status": "PASS",
+            "evidence": "scope PASS: изменено 2 файла, оба в src/test/groovy/org/morago/service/. Дифф не содержит файлов из src/main."
+          }
+        ],
+        "issues": [],
+        "notes": [
+          "[мелочь] В payForCall добавлена заглушка transactionRepository.save(...).thenAnswer(...). Это нужно, чтобы в уведомление приходил не null, и старые проверки она не ослабляет. Исполнитель сам объяснил это в отчёте.",
+          "[мелочь] В тестах отказов (сумма 0 или меньше, не хватает денег, заявка уже обработана) добавлена проверка, что уведомлений не было. Это сверх критериев, но делает тесты строже и в рамки роли укладывается.",
+          "[системное] Судья в конвейере был отключён (--no-judge), поэтому эта проверка выполнена отдельно, вручную."
+        ],
+        "metrics": {
+          "cost_usd": 0.1275234,
+          "duration_s": 21.1,
+          "turns": 4,
+          "input_tokens": 6,
+          "cache_read_tokens": 105474,
+          "cache_write_tokens": 25166,
+          "output_tokens": 1630
+        }
+      }
+    }
+  ]
+}
