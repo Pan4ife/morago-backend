@@ -36,6 +36,9 @@ public class WithdrawalRequestServiceTest {
     @Mock
     private TransactionRepository transactionRepository;
 
+    @Mock
+    private PaymentNotificationService paymentNotificationService;
+
     @InjectMocks
     private WithdrawalRequestService withdrawalRequestService;
 
@@ -62,6 +65,7 @@ public class WithdrawalRequestServiceTest {
         assertEquals(BigDecimal.valueOf(200), translator.getBalance());
 
         verify(withdrawalRequestRepository, never()).save(any(WithdrawalRequest.class));
+        verifyNoInteractions(paymentNotificationService);
     }
 
     @Test
@@ -82,6 +86,10 @@ public class WithdrawalRequestServiceTest {
         assertEquals(WithdrawalStatus.PENDING, result.getStatus());
 
         verify(userRepository).save(translator);
+
+        // переводчику ушло уведомление о созданной заявке
+        verify(paymentNotificationService).notifyWithdrawalCreated(result);
+        verifyNoMoreInteractions(paymentNotificationService);
     }
 
     @Test
@@ -102,6 +110,10 @@ public class WithdrawalRequestServiceTest {
 
         assertEquals(WithdrawalStatus.APPROVED, result.getStatus());
         assertNotNull(result.getProcessedAt());
+
+        // переводчику ушло уведомление об одобрении заявки
+        verify(paymentNotificationService).notifyWithdrawalApproved(result);
+        verifyNoMoreInteractions(paymentNotificationService);
     }
 
     @Test
@@ -117,6 +129,8 @@ public class WithdrawalRequestServiceTest {
         assertThrows(ConflictException.class, () ->
                 withdrawalRequestService.approve(1L)
         );
+
+        verifyNoInteractions(paymentNotificationService);
     }
 
     @Test
@@ -143,5 +157,9 @@ public class WithdrawalRequestServiceTest {
         assertEquals(BigDecimal.valueOf(200), translator.getBalance()); // деньги вернулись
 
         verify(userRepository).save(translator);
+
+        // переводчику ушло уведомление об отклонении заявки
+        verify(paymentNotificationService).notifyWithdrawalRejected(result);
+        verifyNoMoreInteractions(paymentNotificationService);
     }
 }

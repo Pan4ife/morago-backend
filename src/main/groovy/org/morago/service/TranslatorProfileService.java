@@ -3,16 +3,20 @@ package org.morago.service;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.translatorprofile.TranslatorProfileRequest;
 import org.morago.dto.translatorprofile.TranslatorProfileResponse;
+import org.morago.exception.ConflictException;
 import org.morago.exception.InvalidAmountException;
 import org.morago.exception.ResourceNotFoundException;
 import org.morago.model.Language;
 import org.morago.model.Topic;
 import org.morago.model.TranslatorProfile;
 import org.morago.model.User;
+import org.morago.model.VerificationStatus;
 import org.morago.repository.LanguageRepository;
 import org.morago.repository.TopicRepository;
 import org.morago.repository.TranslatorProfileRepository;
 import org.morago.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +37,19 @@ public class TranslatorProfileService {
     private final LanguageRepository languageRepository;
 
     private final TopicRepository topicRepository;
+
+    @Transactional(readOnly = true)
+    public Page<TranslatorProfileResponse> getVerified(Pageable pageable) {
+        return translatorProfileRepository.findByStatus(VerificationStatus.VERIFIED, pageable)
+                .map(profile -> new TranslatorProfileResponse(
+                        profile.getId(),
+                        profile.getUser().getEmail(),
+                        profile.getBio(),
+                        profile.getRating(),
+                        profile.isOnline(),
+                        profile.getHourlyRate()
+                ));
+    }
 
     public TranslatorProfileResponse create(String email, TranslatorProfileRequest request) {
 
@@ -112,6 +129,34 @@ public class TranslatorProfileService {
                 .orElseThrow(() -> new ResourceNotFoundException("Profile not found"));
 
         profile.setHourlyRate(newRate);
+        profile.setUpdatedAt(LocalDateTime.now());
+
+        TranslatorProfile saved = translatorProfileRepository.save(profile);
+
+        return new TranslatorProfileResponse(
+                saved.getId(),
+                user.getEmail(),
+                saved.getBio(),
+                saved.getRating(),
+                saved.isOnline(),
+                saved.getHourlyRate()
+        );
+    }
+
+    @Transactional
+    public TranslatorProfileResponse updateOnline(String email, boolean online) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        TranslatorProfile profile = translatorProfileRepository.findByUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found"));
+
+        if (online && profile.getStatus() != VerificationStatus.VERIFIED) {
+            throw new ConflictException("Only verified translator can go online");
+        }
+
+        profile.setOnline(online);
         profile.setUpdatedAt(LocalDateTime.now());
 
         TranslatorProfile saved = translatorProfileRepository.save(profile);

@@ -10,6 +10,11 @@ import org.morago.service.CallService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,8 +26,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
+@Testcontainers
 @ActiveProfiles("test")
 class CallServiceConcurrencyTest {
+
+    @Container
+    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0");
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", mysql::getJdbcUrl);
+        registry.add("spring.datasource.username", mysql::getUsername);
+        registry.add("spring.datasource.password", mysql::getPassword);
+        // свой контекст Spring — свой Socket.IO-сервер: порт 0 (любой свободный), чтобы не занять 9092
+        // у контекста SecurityIntegrationTests, который живёт в том же прогоне
+        registry.add("socketio.port", () -> 0);
+    }
 
     @Autowired
     private CallService callService;
@@ -108,6 +127,10 @@ class CallServiceConcurrencyTest {
         User updatedClient = userRepository.findById(client.getId()).orElseThrow();
         BigDecimal expectedCost = BigDecimal.valueOf(50).setScale(2); // 5 минут * (600/60) = 50
         assertEquals(0, updatedClient.getBalance().compareTo(BigDecimal.valueOf(10000).subtract(expectedCost)));
+
+        // Проверка 3: переводчику начислено только один раз
+        User updatedTranslator = userRepository.findById(translatorUser.getId()).orElseThrow();
+        assertEquals(0, updatedTranslator.getBalance().compareTo(expectedCost));
     }
 
 
