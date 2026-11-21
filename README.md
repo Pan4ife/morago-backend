@@ -1,34 +1,62 @@
-Morago Backend
+# Morago Backend
 
-통역사 예약 플랫폼의 백엔드 애플리케이션입니다. 사용자가 통역사를 선택해 음성/영상 통화(WebRTC) 로 통역 서비스를 이용하고, 시스템은 결제, 통역사 정산, 출금 신청을 처리합니다. (Habsida 교육 과정 프로젝트)
-스택
-Java 25, Spring Boot 4.1 — Java/Groovy 혼합 프로젝트 (`gmavenplus-plugin`)
-Spring Security 6 — 인증/인가, 역할 기반 접근 제어(RBAC)
-JWT (`jjwt 0.12.7`) — access/refresh 토큰
-Spring Data JPA + Hibernate — 데이터 접근
-MySQL — 데이터베이스
-netty-socketio 2.0.13 — WebSocket 서버, WebRTC 시그널링
-springdoc-openapi 2.8.9 — Swagger API 문서 자동 생성
-JUnit 5 + Testcontainers — 실제 MySQL 컨테이너 기반 통합 테스트
-Lombok, Maven
-주요 기능
-인증/인가 — 회원가입, 로그인, JWT + Refresh 토큰, 역할 기반 접근 제어
-통역사 프로필 — 프로필 생성·관리, 언어 및 전문 분야
-통화 — 통역사와 통화 예약, WebSocket(Socket.IO) 시그널링, 통화 상태(`CallStatus`) 관리
-거래/출금 — 통화 결제, 거래 내역, 출금 신청(`WithdrawalRequest`)과 상태 관리
-리뷰 — 통화 후 통역사 평가 및 리뷰
-관리자 — 사용자·플랫폼 관리용 전용 엔드포인트
-감사 로그 — 주요 작업 이력 기록
-담당 업무
-Spring Security 6 + JWT(access/refresh) 인증·인가 및 RBAC 구현
-netty-socketio 기반 WebRTC 시그널링 구현 (JWT 헤더 인증, 통화방 입장 시 상대방 알림, 차단된 사용자 접근 제한)
-통화·결제 상태 변경을 실시간으로 알리는 알림 서비스 구현 (순환 의존성을 `@Lazy`로 해결)
-`@EntityGraph`로 N+1 문제 해결, `Pageable` 기반 페이지네이션 적용
-전역 예외 처리, Bean Validation, Swagger API 문서화
-Testcontainers 기반 통합 테스트 작성
-Railway에 MySQL과 함께 배포
-feature 브랜치 → `dev` PR → 코드 리뷰 → squash & merge 방식으로 협업
-프로젝트 구조
+[![CI](https://github.com/Pan4ife/morago-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/Pan4ife/morago-backend/actions/workflows/ci.yml)
+
+통역사 예약 플랫폼의 백엔드 애플리케이션입니다. 사용자가 통역사를 선택해 음성/영상 통화(WebRTC)로 통역 서비스를
+이용하고, 시스템은 결제, 통역사 정산, 출금 신청을 처리합니다.
+
+Habsida 교육 과정의 팀 프로젝트(2026.06–09)로 시작했고, 과정이 끝난 뒤 개인적으로 테스트, CI, 웹 클라이언트를
+추가했습니다.
+
+## 주요 기능
+
+- **인증/인가** — 회원가입, 로그인, JWT + Refresh 토큰, 역할 기반 접근 제어
+- **통역사 프로필** — 프로필 생성·관리, 언어 및 전문 분야, 온라인 상태
+- **통화** — 통역사와 통화 예약, WebSocket(Socket.IO) 시그널링, 통화 상태(`CallStatus`) 관리
+- **거래/출금** — 통화 결제, 거래 내역, 출금 신청(`WithdrawalRequest`)과 상태 관리
+- **리뷰** — 통화 후 통역사 평가 및 리뷰
+- **관리자** — 사용자 차단/해제, 통역사 인증
+- **감사 로그** — 주요 작업 이력 기록
+- **웹 클라이언트** — 로그인, 통역사 목록, 통화 요청/취소 (`src/main/resources/static/`)
+
+## 기술 스택
+
+- **Java 25, Spring Boot 4.1** — Java/Groovy 혼합 프로젝트 (`gmavenplus-plugin`)
+- **Spring Security 7** — 인증/인가, 역할 기반 접근 제어(RBAC)
+- **JWT** (`jjwt 0.12.7`) — access/refresh 토큰
+- **Spring Data JPA + Hibernate** — 데이터 접근
+- **MySQL** — 데이터베이스
+- **netty-socketio 2.0.13** — WebSocket 서버, WebRTC 시그널링
+- **springdoc-openapi 2.8.9** — Swagger API 문서 자동 생성
+- **JUnit 5, Mockito, Testcontainers** — 단위 테스트와 실제 MySQL 컨테이너 기반 통합 테스트
+- **GitHub Actions** — PR마다 빌드와 전체 테스트 실행 (CI)
+- Lombok, Maven
+
+## 담당 업무
+
+### 팀 프로젝트 (Habsida 과정)
+
+- 역할 기반 접근 제어(RBAC) 적용, 401/403 오류를 일관된 JSON으로 반환 (`AuthenticationEntryPoint`, `AccessDeniedHandler`)
+- 관리자 기능: 사용자 차단/해제, 통역사 인증 절차
+- netty-socketio 기반 WebRTC 시그널링 구현 (JWT 헤더 인증, 통화방 입장 시 상대방 알림, 차단된 사용자 접근 제한)
+- 통화·결제 상태 변경을 실시간으로 알리는 알림 서비스 구현 (순환 의존성을 `@Lazy`로 해결)
+- `@EntityGraph`로 N+1 문제 해결, `Pageable` 기반 페이지네이션 적용
+- 전역 예외 처리, Bean Validation, Swagger API 문서화
+- Testcontainers 기반 보안 통합 테스트 작성
+- feature 브랜치 → `dev` PR → 코드 리뷰 → squash & merge 방식으로 협업
+
+JWT 토큰 발급(access/refresh)과 통화·결제 핵심 로직은 팀원이 구현했습니다.
+
+### 개인 개선 작업 (과정 종료 후)
+
+- 실패하던 단위 테스트 수정, 동시성 테스트를 Testcontainers로 전환 — 전체 54개 테스트 통과
+- GitHub Actions CI 구축
+- 웹 클라이언트와 필요한 API 추가: `GET /translators`, `GET /auth/me`, `PATCH /translator-profile/online`
+- 브라우저용 Socket.IO 토큰 전달 (`?token=`, 헤더가 있으면 헤더 우선)
+- AI 코딩 에이전트(Claude Code)를 활용해 작업을 작은 태스크로 나누고, 테스트와 리뷰로 결과를 검증하는 방식으로 진행
+
+## 프로젝트 구조
+
 ```
 src/main/groovy/org/morago/
 ├── config/       — Spring 설정 (Security, WebSocket, OpenAPI 등)
@@ -43,31 +71,52 @@ src/main/groovy/org/morago/
 ├── service/      — 비즈니스 로직
 ├── signaling/    — Socket.IO 기반 WebRTC 시그널링
 └── util/         — 유틸리티
+src/main/resources/static/   — 웹 클라이언트
 ```
-로컬 실행
-요구 사항
-JDK 25
-MySQL (로컬 또는 Docker)
-Maven — `./mvnw` / `mvnw.cmd` 사용, 별도 설치 불필요
-환경 변수
-변수	설명
-`DB_PASSWORD`	MySQL 사용자 비밀번호
-`JWT_SECRET`	JWT 서명용 비밀키 (32자 이상)
-`SPRING_PROFILES_ACTIVE`	활성 프로필 (기본값 `dev`)
-`SOCKETIO_HOST` / `SOCKETIO_PORT`	Socket.IO 서버 주소와 포트 (기본값 `localhost:9092`)
-빌드 및 실행
+
+## 로컬 실행
+
+### 요구 사항
+
+- JDK 25
+- Docker — MySQL 실행과 통합 테스트(Testcontainers)에 필요
+- Maven — `./mvnw` / `mvnw.cmd` 사용, 별도 설치 불필요
+
+### 환경 변수
+
+| 변수 | 설명 |
+|---|---|
+| `DB_PASSWORD` | MySQL `root` 비밀번호 |
+| `JWT_SECRET` | JWT 서명용 비밀키 (32자 이상) |
+| `SPRING_PROFILES_ACTIVE` | 활성 프로필 (기본값 `dev`) |
+| `SOCKETIO_HOST` / `SOCKETIO_PORT` | Socket.IO 서버 주소와 포트 (기본값 `localhost:9092`) |
+
+### 빌드 및 실행
+
 ```bash
+docker run -d --name morago-mysql -e MYSQL_ROOT_PASSWORD=<비밀번호> -e MYSQL_DATABASE=morago -p 3306:3306 mysql:8
 ./mvnw clean package -DskipTests
 java -jar target/morago-0.0.1-SNAPSHOT.jar
 ```
-기본적으로 http://localhost:8080 에서 실행됩니다.
-API 문서
-실행 후 Swagger UI에서 확인할 수 있습니다.
-```
-http://localhost:8080/swagger-ui/index.html
-```
-테스트
+
+기본적으로 http://localhost:8080 에서 실행되며, 같은 주소에서 웹 클라이언트를 사용할 수 있습니다.
+
+### 데모 계정 (`dev` 프로필 전용)
+
+| 이메일 | 비밀번호 | 역할 |
+|---|---|---|
+| `user@morago.com` | `user123` | USER, ADMIN (통화용 잔액 포함) |
+| `translator@morago.com` | `translator123` | TRANSLATOR (인증 완료 프로필) |
+| `admin@morago.com` | `admin123` | USER, ADMIN, TRANSLATOR |
+
+## API 문서
+
+실행 후 Swagger UI에서 확인할 수 있습니다: http://localhost:8080/swagger-ui/index.html
+
+## 테스트
+
 ```bash
 ./mvnw test
 ```
-통합 테스트는 Testcontainers를 사용하므로 Docker가 실행 중이어야 합니다.
+
+통합 테스트는 Testcontainers를 사용하므로 Docker가 실행 중이어야 합니다. 같은 테스트가 PR마다 GitHub Actions에서도 실행됩니다.
