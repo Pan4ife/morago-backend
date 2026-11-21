@@ -1,0 +1,86 @@
+<!-- index.html — главная страница веб-клиента morago: экраны «вход/регистрация», «вошёл» (каталог) и «звонок». -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Morago</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="page">
+    <h1 class="logo">Morago</h1>
+
+    <!-- Экран: вход / регистрация -->
+    <section id="auth-screen" class="card" hidden>
+        <div class="tabs">
+            <button type="button" class="tab active" data-mode="login">Вход</button>
+            <button type="button" class="tab" data-mode="register">Регистрация</button>
+        </div>
+
+        <form id="auth-form" novalidate>
+            <label class="field">
+                <span>Email</span>
+                <input id="email" name="email" type="email" autocomplete="username" required>
+                <small class="field-error" data-field="email"></small>
+            </label>
+            <label class="field">
+                <span>Пароль</span>
+                <input id="password" name="password" type="password" autocomplete="current-password"
+                       minlength="6" required>
+                <small class="field-error" data-field="password"></small>
+            </label>
+
+            <p id="auth-error" class="form-error" hidden></p>
+
+            <button id="auth-submit" type="submit" class="primary">Войти</button>
+        </form>
+    </section>
+
+    <!-- Экран: пользователь вошёл -->
+    <section id="home-screen" class="card" hidden>
+        <header class="user-bar">
+            <div class="user-info">
+                <span id="user-email" class="user-email"></span>
+                <span id="user-roles" class="user-roles"></span>
+                <span class="user-balance">Баланс: <b id="user-balance"></b></span>
+            </div>
+            <button id="logout-button" type="button" class="secondary">Выйти</button>
+        </header>
+
+        <div id="online-box" class="online-box" hidden>
+            <label class="switch">
+                <input id="online-toggle" type="checkbox">
+                <span>На связи</span>
+            </label>
+            <small id="online-error" class="field-error"></small>
+        </div>
+
+        <div class="catalog-head">
+            <h2>Переводчики</h2>
+            <button id="catalog-refresh" type="button" class="secondary">Обновить</button>
+        </div>
+        <p id="catalog-error" class="form-error" hidden></p>
+        <p id="catalog-empty" class="hint" hidden>Сейчас нет проверенных переводчиков. Загляните позже.</p>
+        <ul id="catalog-list" class="catalog"></ul>
+    </section>
+
+    <!-- Экран: исходящий звонок, ждём ответа переводчика -->
+    <section id="call-screen" class="card" hidden>
+        <h2 class="call-title">Ждём переводчика…</h2>
+        <p class="call-peer">Переводчик: <b id="call-translator"></b></p>
+        <p id="call-error" class="form-error" hidden></p>
+        <button id="call-cancel" type="button" class="secondary">Отменить</button>
+    </section>
+
+    <p id="loading" class="hint">Загрузка…</p>
+</main>
+
+<script src="api.js"></script>
+<script src="errors.js"></script>
+<script src="catalog.js"></script>
+<script src="online-toggle.js"></script>
+<script src="call-screen.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

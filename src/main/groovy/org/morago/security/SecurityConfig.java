@@ -59,6 +59,10 @@ public class SecurityConfig {
                                 "/swagger-ui.html"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/languages/**").permitAll()
+                        // статика веб-клиента (src/main/resources/static/)
+                        .requestMatchers(HttpMethod.GET,
+                                "/", "/index.html", "/*.html", "/*.js", "/*.css", "/favicon.ico"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
 

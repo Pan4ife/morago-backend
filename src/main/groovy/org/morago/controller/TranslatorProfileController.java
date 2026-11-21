@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.morago.dto.translatorprofile.HourlyRateRequest;
+import org.morago.dto.translatorprofile.OnlineStatusRequest;
 import org.morago.dto.translatorprofile.TranslatorProfileRequest;
 import org.morago.dto.translatorprofile.TranslatorProfileResponse;
 import org.morago.service.TranslatorProfileService;
@@ -83,6 +84,29 @@ public class TranslatorProfileController {
                 translatorProfileService.updateHourlyRate(
                         authentication.getName(),
                         request.hourlyRate()
+                )
+        );
+    }
+
+    @Operation(summary = "Включить или выключить статус «На связи»",
+            description = "Требуется роль TRANSLATOR (наследуется с уровня класса). " +
+                    "Включить может только переводчик с подтверждённой анкетой (VERIFIED); выключить — всегда")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Статус успешно изменён"),
+            @ApiResponse(responseCode = "400", description = "Не указано поле online"),
+            @ApiResponse(responseCode = "403", description = "Требуется роль TRANSLATOR"),
+            @ApiResponse(responseCode = "404", description = "Пользователь или анкета переводчика не найдены"),
+            @ApiResponse(responseCode = "409", description = "Анкета не подтверждена — включить «На связи» нельзя")
+    })
+    @PatchMapping("/online")
+    public ResponseEntity<TranslatorProfileResponse> updateOnline(
+            Authentication authentication,
+            @Valid @RequestBody OnlineStatusRequest request
+    ) {
+        return ResponseEntity.ok(
+                translatorProfileService.updateOnline(
+                        authentication.getName(),
+                        request.online()
                 )
         );
     }

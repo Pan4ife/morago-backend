@@ -32,6 +32,9 @@ public class TransactionServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private PaymentNotificationService paymentNotificationService;
+
     @InjectMocks
     private TransactionService transactionService;
 
@@ -61,6 +64,9 @@ public class TransactionServiceTest {
 
         verify(userRepository).save(user);
         verify(transactionRepository).save(any(Transaction.class));
+
+        // пользователю ушло уведомление о пополнении именно этой транзакцией
+        verify(paymentNotificationService).notifyTopUp(result);
     }
 
     @Test
@@ -71,6 +77,7 @@ public class TransactionServiceTest {
         );
 
         verifyNoInteractions(userRepository);
+        verifyNoInteractions(paymentNotificationService);
     }
 
     @Test
@@ -81,6 +88,7 @@ public class TransactionServiceTest {
         );
 
         verifyNoInteractions(userRepository);
+        verifyNoInteractions(paymentNotificationService);
     }
 
     @Test
@@ -100,12 +108,17 @@ public class TransactionServiceTest {
         when(transactionRepository.existsByCallIdAndType(10L, TransactionType.CALL_CHARGE))
                 .thenReturn(false);
 
+        when(transactionRepository.save(any(Transaction.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
         transactionService.payForCall(client, translator, BigDecimal.valueOf(300), call);
 
         assertEquals(BigDecimal.valueOf(700), client.getBalance());
         assertEquals(BigDecimal.valueOf(300), translator.getBalance());
 
         verify(transactionRepository, times(2)).save(any(Transaction.class));
+
+        verifyClientChargedAndTranslatorEarned(client, translator, BigDecimal.valueOf(300));
     }
 
     @Test
@@ -125,6 +138,9 @@ public class TransactionServiceTest {
         when(transactionRepository.existsByCallIdAndType(10L, TransactionType.CALL_CHARGE))
                 .thenReturn(false);
 
+        when(transactionRepository.save(any(Transaction.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
         // клиент был проверен на положительный баланс при start(),
         // но реальная стоимость (500) превышает баланс (100) — уходит в долг
         transactionService.payForCall(client, translator, BigDecimal.valueOf(500), call);
@@ -133,5 +149,22 @@ public class TransactionServiceTest {
         assertEquals(BigDecimal.valueOf(500), translator.getBalance()); // переводчик получил полную оплату
 
         verify(transactionRepository, times(2)).save(any(Transaction.class));
+
+        verifyClientChargedAndTranslatorEarned(client, translator, BigDecimal.valueOf(500));
+    }
+
+    // клиенту ушло уведомление о списании, переводчику — о начислении, каждому со своей транзакцией
+    private void verifyClientChargedAndTranslatorEarned(User client, User translator, BigDecimal amount) {
+        verify(paymentNotificationService).notifyTransactionCharged(argThat(t ->
+                t.getUser() == client
+                        && t.getType() == TransactionType.CALL_CHARGE
+                        && t.getAmount().compareTo(amount.negate()) == 0));
+
+        verify(paymentNotificationService).notifyTransactionEarned(argThat(t ->
+                t.getUser() == translator
+                        && t.getType() == TransactionType.CALL_EARNING
+                        && t.getAmount().compareTo(amount) == 0));
+
+        verifyNoMoreInteractions(paymentNotificationService);
     }
 }
