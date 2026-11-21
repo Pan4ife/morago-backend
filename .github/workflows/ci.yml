@@ -1,0 +1,26 @@
+# Build and run all tests on every push to main and on every pull request.
+# Integration tests use Testcontainers (MySQL); Docker is available on GitHub-hosted Ubuntu runners.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build and test
+        run: ./mvnw -B verify
